@@ -1,7 +1,7 @@
 import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://trust-server-lovat.vercel.app/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
