@@ -22,6 +22,13 @@ import { EventDashboardPage } from '../features/event/EventDashboardPage';
 import { SuperAdminDashboardPage } from '../features/superadmin/SuperAdminDashboardPage';
 import { FeeManagementPage } from '../features/fee/FeeManagementPage';
 import { LocationManagementPage } from '../features/geo/LocationManagementPage';
+
+import { NoticeBoardPage } from '../features/notice/NoticeBoardPage';
+import { MeetingVotingPage } from '../features/meeting/MeetingVotingPage';
+import { MemberIDCardPage } from '../features/idcard/MemberIDCardPage';
+import { BloodReliefDirectoryPage } from '../features/directory/BloodReliefDirectoryPage';
+import { DocumentVaultPage } from '../features/document/DocumentVaultPage';
+
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const AppRoutes = () => {
@@ -54,6 +61,13 @@ export const AppRoutes = () => {
         <Route path="/superadmin" element={<SuperAdminDashboardPage />} />
         <Route path="/fees" element={<FeeManagementPage />} />
         <Route path="/locations" element={<LocationManagementPage />} />
+
+        {/* 5 New High-Impact Modules */}
+        <Route path="/notices" element={<NoticeBoardPage />} />
+        <Route path="/meetings" element={<MeetingVotingPage />} />
+        <Route path="/idcard" element={<MemberIDCardPage />} />
+        <Route path="/blood-relief" element={<BloodReliefDirectoryPage />} />
+        <Route path="/documents" element={<DocumentVaultPage />} />
       </Route>
 
       {/* Fallback */}

@@ -9,13 +9,25 @@ export const NAV_SECTIONS = [
     title: 'Organization',
     items: [
       { id: 'locations', title: 'Location Management', path: '/locations', icon: '📍', roles: ['ALL'] },
-      { id: 'committees', title: 'Committees & Hierarchy', path: '/committees', icon: '👥', roles: ['ALL'] }
+      { id: 'committees', title: 'Committees & Hierarchy', path: '/committees', icon: '👥', roles: ['ALL'] },
+      { id: 'documents', title: 'Constitution & Vault', path: '/documents', icon: '📂', roles: ['ALL'] }
     ]
   },
   {
-    title: 'Members',
+    title: 'Members & Directory',
     items: [
-      { id: 'members', title: 'Member Directory', path: '/members', icon: '🪪', roles: ['ALL'] }
+      { id: 'members', title: 'Member Directory', path: '/members', icon: '🪪', roles: ['ALL'] },
+      { id: 'idcard', title: 'Smart PVC ID Studio', path: '/idcard', icon: '🆔', roles: ['ALL'] },
+      { id: 'blood-relief', title: 'Emergency Blood Directory', path: '/blood-relief', icon: '🩸', roles: ['ALL'] }
+    ]
+  },
+  {
+    title: 'Communication & Governance',
+    items: [
+      { id: 'notices', title: 'Notice Board & Alerts', path: '/notices', icon: '📢', roles: ['ALL'] },
+      { id: 'meetings', title: 'MoM & E-Voting Polls', path: '/meetings', icon: '📋', roles: ['ALL'] },
+      { id: 'events', title: 'Events & QR Tickets', path: '/events', icon: '🎟️', roles: ['ALL'] },
+      { id: 'chat', title: 'Real-Time Workspaces', path: '/chat', icon: '💬', roles: ['ALL'] }
     ]
   },
   {
@@ -26,13 +38,6 @@ export const NAV_SECTIONS = [
       { id: 'finance', title: 'Cashbook & Ledger', path: '/finance', icon: 'ALL' },
       { id: 'budgets', title: 'Fiscal Budgets', path: '/budgets', icon: '🏛️', roles: ['ALL'] },
       { id: 'receipts', title: 'Payment Receipts', path: '/receipts', icon: '🧾', roles: ['ALL'] }
-    ]
-  },
-  {
-    title: 'Events & Communication',
-    items: [
-      { id: 'events', title: 'Events & QR Tickets', path: '/events', icon: '🎟️', roles: ['ALL'] },
-      { id: 'chat', title: 'Real-Time Workspaces', path: '/chat', icon: '💬', roles: ['ALL'] }
     ]
   },
   {
