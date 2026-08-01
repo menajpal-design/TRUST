@@ -85,26 +85,26 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-2xl my-8">
-        <Card className="max-h-[90vh] overflow-y-auto pr-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-2xl my-4 sm:my-8">
+        <Card className="max-h-[85vh] sm:max-h-[90vh] overflow-y-auto pr-1 sm:pr-2">
           <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/90 py-2 backdrop-blur-sm z-10 border-b border-slate-800">
             <div>
-              <h2 className="text-xl font-bold text-slate-100">Edit Member Roles & Fee Profile</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-100">Edit Member Roles & Fee Profile</h2>
               <p className="text-xs text-indigo-400 font-mono">Member Code: {member.member_code}</p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-200 text-lg font-bold">
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">
               ✕
             </button>
           </div>
 
           {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Personal Details */}
-            <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Personal Details</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800">
+              <h3 className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wider">Personal Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label>First Name</Label>
                   <Input type="text" name="first_name" value={formData.first_name} onChange={handleChange} required />
@@ -117,12 +117,12 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
             </div>
 
             {/* Fee Profile Configuration */}
-            <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-indigo-500/40">
-              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="space-y-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-indigo-500/40">
+              <h3 className="text-xs sm:text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <span>💳</span> Fee Profile Configuration
               </h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label>Custom Fee Amount ($)</Label>
                   <Input
@@ -138,7 +138,7 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
                   <Label>Fee Status</Label>
                   <select
                     name="fee_status"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"
                     value={formData.fee_profile.fee_status}
                     onChange={handleFeeProfileChange}
                   >
@@ -149,12 +149,12 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label>Fee Frequency</Label>
                   <select
                     name="fee_frequency"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"
                     value={formData.fee_profile.fee_frequency}
                     onChange={handleFeeProfileChange}
                   >
@@ -199,6 +199,7 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
                 </label>
               </div>
             </div>
+
 
             {/* Revision Reason */}
             <div>

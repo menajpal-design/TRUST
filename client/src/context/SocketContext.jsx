@@ -11,14 +11,25 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && accessToken) {
-      const socketInstance = io('/', {
+      const rawApiUrl = import.meta.env.VITE_API_URL || 'https://trust-server-lovat.vercel.app/api/v1';
+      const socketServerUrl = import.meta.env.VITE_SOCKET_URL || rawApiUrl.replace(/\/api\/v1\/?$/, '');
+
+      const socketInstance = io(socketServerUrl, {
         auth: { token: accessToken },
-        transports: ['websocket', 'polling']
+        transports: ['polling', 'websocket'],
+        reconnectionAttempts: 5,
+        timeout: 10000
       });
 
       socketInstance.on('connect', () => {
         console.log('Socket Connected:', socketInstance.id);
       });
+
+      socketInstance.on('connect_error', (err) => {
+        // Silently handle socket connection warnings on serverless platforms
+        console.warn('Socket connection note:', err.message);
+      });
+
 
       socketInstance.on('online_users', (users) => {
         setOnlineUsers(users);

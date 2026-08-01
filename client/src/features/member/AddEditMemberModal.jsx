@@ -94,7 +94,7 @@ export const AddEditMemberModal = ({ isOpen, onClose, member = null, onSuccess }
           {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>First Name</Label>
                 <Input
@@ -130,7 +130,7 @@ export const AddEditMemberModal = ({ isOpen, onClose, member = null, onSuccess }
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Member ID Code (Optional)</Label>
                 <Input
@@ -146,7 +146,7 @@ export const AddEditMemberModal = ({ isOpen, onClose, member = null, onSuccess }
                 <Label>Member Status</Label>
                 <select
                   name="status"
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"
                   value={formData.status}
                   onChange={handleChange}
                 >
@@ -158,7 +158,7 @@ export const AddEditMemberModal = ({ isOpen, onClose, member = null, onSuccess }
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Phone Number</Label>
                 <Input
