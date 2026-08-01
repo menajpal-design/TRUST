@@ -7,10 +7,12 @@ import { Input } from '../../components/ui/Input';
 import { AddMemberModal } from './AddMemberModal';
 import { EditMemberModal } from './EditMemberModal';
 import { MemberHistoryModal } from './MemberHistoryModal';
-import { MemberProfileModal } from './MemberProfileModal';
+import useAuthStore from '../../store/useAuthStore';
 
 export const MemberListPage = () => {
+  const { user: currentUser } = useAuthStore();
   const [members, setMembers] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ page: 1, limit: 10, totalDocs: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
@@ -153,6 +155,10 @@ export const MemberListPage = () => {
                 <tbody className="divide-y divide-slate-800/60">
                   {members.map((m) => {
                     const u = m.user_id;
+                    const isOwner = m.is_default_tenant || m.role_id?.name === 'ORG_OWNER';
+                    const isSelf = currentUser && u && (u._id === currentUser._id || u === currentUser._id || u.email === currentUser.email);
+                    const isProtected = isOwner || isSelf;
+
                     return (
                       <tr key={m._id} className="hover:bg-slate-800/40 transition-colors">
                         <td className="px-4 py-3.5 font-mono text-xs font-bold text-indigo-400">
@@ -205,16 +211,23 @@ export const MemberListPage = () => {
                           >
                             📜 History
                           </button>
-                          <button
-                            onClick={() => handleDelete(m._id)}
-                            className="text-xs text-rose-400 hover:text-rose-300 font-medium"
-                          >
-                            Delete
-                          </button>
+                          {isProtected ? (
+                            <span className="text-xs text-slate-500 font-mono italic cursor-not-allowed" title={isOwner ? "Owner account cannot be deleted" : "Cannot delete your logged-in account"}>
+                              🛡️ Protected
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleDelete(m._id)}
+                              className="text-xs text-rose-400 hover:text-rose-300 font-medium"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
                   })}
+
                 </tbody>
               </table>
             </div>
