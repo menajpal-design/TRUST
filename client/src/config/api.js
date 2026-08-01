@@ -17,13 +17,17 @@ api.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    if (activeOrganization && activeOrganization._id) {
-      config.headers['X-Tenant-ID'] = activeOrganization._id;
+    const tenantId = typeof activeOrganization === 'string'
+      ? activeOrganization
+      : (activeOrganization?._id || activeOrganization?.id || activeOrganization?.organization_id);
+    if (tenantId) {
+      config.headers['X-Tenant-ID'] = tenantId;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
+
 
 api.interceptors.response.use(
   (response) => response,
