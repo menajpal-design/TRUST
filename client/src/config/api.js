@@ -13,13 +13,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const { accessToken, activeOrganization } = useAuthStore.getState();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+    const state = useAuthStore.getState();
+    const token = state.accessToken || localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    const tenantId = typeof activeOrganization === 'string'
-      ? activeOrganization
-      : (activeOrganization?._id || activeOrganization?.id || activeOrganization?.organization_id);
+    const activeOrg = state.activeOrganization;
+    const tenantId = typeof activeOrg === 'string'
+      ? activeOrg
+      : (activeOrg?._id || activeOrg?.id || activeOrg?.organization_id);
     if (tenantId) {
       config.headers['X-Tenant-ID'] = tenantId;
     }
@@ -28,38 +30,38 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config || {};
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      originalRequest.url &&
-      !originalRequest.url.includes('/auth/login') &&
-      !originalRequest.url.includes('/auth/refresh') &&
-      !originalRequest.url.includes('/auth/me')
-    ) {
+    const isAuthRoute = originalRequest.url && (
+      originalRequest.url.includes('/auth/login') ||
+      originalRequest.url.includes('/auth/register') ||
+      originalRequest.url.includes('/auth/forgot-password') ||
+      originalRequest.url.includes('/auth/reset-password')
+    );
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
       try {
         const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-        const newAccessToken = res.data.data.accessToken;
-        useAuthStore.getState().setAccessToken(newAccessToken);
-        originalRequest.headers = originalRequest.headers || {};
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
+        const newAccessToken = res.data?.data?.accessToken;
+        if (newAccessToken) {
+          useAuthStore.getState().setAccessToken(newAccessToken);
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        }
       } catch (refreshError) {
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-    }
+
     return Promise.reject(error);
   }
 );
+
 
 
 export default api;

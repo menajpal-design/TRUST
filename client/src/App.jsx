@@ -6,25 +6,34 @@ import useAuthStore from './store/useAuthStore';
 import { fetchCurrentUser } from './services/auth.service';
 
 export default function App() {
-  const { setAuth, logout, setLoading } = useAuthStore();
+  const { setAuth, setLoading, accessToken } = useAuthStore();
 
   useEffect(() => {
+    const token = accessToken || localStorage.getItem('accessToken');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     fetchCurrentUser()
       .then((res) => {
-        setAuth({
-          user: res.data.user,
-          activeOrganization: res.data.activeOrganization,
-          organizations: res.data.organizations,
-          accessToken: null
-        });
+        if (res && res.data) {
+          setAuth({
+            user: res.data.user,
+            activeOrganization: res.data.activeOrganization,
+            organizations: res.data.organizations,
+            accessToken: token
+          });
+        }
       })
-      .catch(() => {
-        logout();
+      .catch((err) => {
+        console.warn('Session sync notice:', err?.message);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [setAuth, logout, setLoading]);
+  }, []);
+
 
   return (
     <BrowserRouter>
