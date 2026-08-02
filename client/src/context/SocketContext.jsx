@@ -1,55 +1,16 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
-import useAuthStore from '../store/useAuthStore';
+import React, { createContext, useContext, useState } from 'react';
 
 const SocketContext = createContext(null);
 
+// NOTE: Vercel Serverless does NOT support persistent WebSocket/Socket.io connections.
+// Socket.io is intentionally disabled to prevent 404 polling errors on Vercel deployment.
+// Real-time features can be enabled via a dedicated WebSocket server or Pusher/Ably if needed.
+
 export const SocketProvider = ({ children }) => {
-  const { accessToken, isAuthenticated } = useAuthStore();
-  const [socket, setSocket] = useState(null);
-  const [onlineUsers, setOnlineUsers] = useState([]);
-
-  useEffect(() => {
-    if (isAuthenticated && accessToken) {
-      const rawApiUrl = import.meta.env.VITE_API_URL || 'https://trust-server-lovat.vercel.app/api/v1';
-      const socketServerUrl = import.meta.env.VITE_SOCKET_URL || rawApiUrl.replace(/\/api\/v1\/?$/, '');
-
-      const socketInstance = io(socketServerUrl, {
-        auth: { token: accessToken },
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 5,
-        timeout: 10000
-      });
-
-      socketInstance.on('connect', () => {
-        console.log('Socket Connected:', socketInstance.id);
-      });
-
-      socketInstance.on('connect_error', () => {
-        // Silently handle socket reconnection on serverless deployments
-      });
-
-
-
-      socketInstance.on('online_users', (users) => {
-        setOnlineUsers(users);
-      });
-
-      setSocket(socketInstance);
-
-      return () => {
-        socketInstance.disconnect();
-      };
-    } else {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
-    }
-  }, [isAuthenticated, accessToken]);
+  const [onlineUsers] = useState([]);
 
   return (
-    <SocketContext.Provider value={{ socket, onlineUsers }}>
+    <SocketContext.Provider value={{ socket: null, onlineUsers }}>
       {children}
     </SocketContext.Provider>
   );
