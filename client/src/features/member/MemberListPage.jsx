@@ -7,7 +7,9 @@ import { Input } from '../../components/ui/Input';
 import { AddMemberModal } from './AddMemberModal';
 import { EditMemberModal } from './EditMemberModal';
 import { MemberHistoryModal } from './MemberHistoryModal';
+import { MemberProfileModal } from './MemberProfileModal';
 import useAuthStore from '../../store/useAuthStore';
+
 
 export const MemberListPage = () => {
   const { user: currentUser } = useAuthStore();

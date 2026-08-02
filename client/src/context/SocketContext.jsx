@@ -25,10 +25,10 @@ export const SocketProvider = ({ children }) => {
         console.log('Socket Connected:', socketInstance.id);
       });
 
-      socketInstance.on('connect_error', (err) => {
-        // Silently handle socket connection warnings on serverless platforms
-        console.warn('Socket connection note:', err.message);
+      socketInstance.on('connect_error', () => {
+        // Silently handle socket reconnection on serverless deployments
       });
+
 
 
       socketInstance.on('online_users', (users) => {
