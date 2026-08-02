@@ -24,13 +24,15 @@ export const NoticeBoardPage = () => {
     setLoading(true);
     try {
       const res = await fetchNotices({ search, category });
-      setNotices(res.data.docs || []);
+      // Server returns { success, data: [...], meta }
+      setNotices(Array.isArray(res.data) ? res.data : (res.data?.docs || []));
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadNotices();

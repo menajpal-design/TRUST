@@ -23,14 +23,16 @@ export const MeetingVotingPage = () => {
     setLoading(true);
     try {
       const [mRes, vRes] = await Promise.all([fetchMeetings(), fetchVotes()]);
-      setMeetings(mRes.data || []);
-      setVotes(vRes.data || []);
+      // Server returns { success, data: [...] }
+      setMeetings(Array.isArray(mRes.data) ? mRes.data : (mRes.data?.docs || []));
+      setVotes(Array.isArray(vRes.data) ? vRes.data : (vRes.data?.docs || []));
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadData();
