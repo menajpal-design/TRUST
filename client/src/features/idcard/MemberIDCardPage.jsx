@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchMembers } from '../../services/member.service';
-import { useAuthStore } from '../../store/useAuthStore';
+import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 

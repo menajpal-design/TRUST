@@ -4,7 +4,7 @@ import useAuthStore from '../store/useAuthStore';
 import { logoutUser, switchOrganization } from '../services/auth.service';
 import { Button } from './ui/Button';
 
-export const Navbar = ({ onOpenCommandPalette, onOpenAIModal }) => {
+export const Navbar = ({ onOpenCommandPalette, onToggleMobileMenu }) => {
   const { user, activeOrganization, organizations, setAuth, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -53,11 +53,24 @@ export const Navbar = ({ onOpenCommandPalette, onOpenAIModal }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6">
       {/* Left: Brand / Tenant Switcher */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-2 text-slate-300 hover:text-white rounded-lg bg-slate-800/80 text-base font-bold border border-slate-700"
+            title="Open Menu"
+          >
+            ☰
+          </button>
+        )}
+
         <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md text-xs md:hidden">
+            U
+          </div>
           <span className="text-xs text-slate-400 font-semibold hidden sm:inline">Organization:</span>
           <select
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold max-w-[130px] sm:max-w-none truncate"
             value={activeOrganization?._id || ''}
             onChange={(e) => handleSwitchOrg(e.target.value)}
             disabled={switching}
@@ -128,15 +141,6 @@ export const Navbar = ({ onOpenCommandPalette, onOpenAIModal }) => {
             </div>
           )}
         </div>
-
-        {/* AI Copilot Button */}
-        <Button
-          size="sm"
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 border-none text-xs font-bold hidden sm:inline-flex"
-          onClick={onOpenAIModal}
-        >
-          ✨ AI Copilot
-        </Button>
 
         {/* Fullscreen Button */}
         <button

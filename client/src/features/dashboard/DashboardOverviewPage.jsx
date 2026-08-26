@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import { logoutUser, switchOrganization } from '../../services/auth.service';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Sidebar } from '../../components/Sidebar';
-import { AIAssistantModal } from '../../components/AIAssistantModal';
 import { CommandPaletteModal } from '../../components/ui/CommandPaletteModal';
 
 export const DashboardOverviewPage = () => {
@@ -13,7 +12,6 @@ export const DashboardOverviewPage = () => {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const isSuperAdmin = user?.is_global_superadmin;
@@ -73,15 +71,6 @@ export const DashboardOverviewPage = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* AI Copilot Trigger */}
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 border-none text-xs font-bold"
-              onClick={() => setIsAIModalOpen(true)}
-            >
-              ✨ AI Copilot
-            </Button>
-
             {/* Tenant Switcher */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-semibold">Tenant:</span>
@@ -237,9 +226,6 @@ export const DashboardOverviewPage = () => {
           )}
         </main>
       </div>
-
-      {/* AI Assistant Modal */}
-      <AIAssistantModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
 
       {/* Command Palette Modal (Ctrl + K) */}
       <CommandPaletteModal isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />

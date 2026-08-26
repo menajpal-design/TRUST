@@ -17,6 +17,13 @@ class FeeController {
   }
 
   static async generateDues(req, res) {
+    const isSuperAdmin = req.user.is_global_superadmin;
+    const role = String(req.user.role || 'MEMBER').toUpperCase();
+    const isAuthorized = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'TREASURER', 'ADMIN', 'MODERATOR'].includes(role);
+    if (!isAuthorized) {
+      return ApiResponse.error(res, 'Only organization owners or treasurers can generate dues', 403);
+    }
+
     const result = await FeeService.generateMonthlyDues(
       req.user.active_organization_id,
       req.body.period
@@ -25,6 +32,13 @@ class FeeController {
   }
 
   static async collect(req, res) {
+    const isSuperAdmin = req.user.is_global_superadmin;
+    const role = String(req.user.role || 'MEMBER').toUpperCase();
+    const isAuthorized = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'TREASURER', 'ADMIN', 'MODERATOR'].includes(role);
+    if (!isAuthorized) {
+      return ApiResponse.error(res, 'Only designated organization collectors or owners can collect fee payments', 403);
+    }
+
     const result = await FeeService.collectFee(
       req.user.active_organization_id,
       req.user._id,

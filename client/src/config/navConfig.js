@@ -35,7 +35,7 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'fees', title: 'Membership Fees', path: '/fees', icon: '💳', roles: ['ALL'] },
       { id: 'donations', title: 'Donations & Campaigns', path: '/donations', icon: '💰', roles: ['ALL'] },
-      { id: 'finance', title: 'Cashbook & Ledger', path: '/finance', icon: 'ALL' },
+      { id: 'finance', title: 'Cashbook & Ledger', path: '/finance', icon: '💼', roles: ['ALL'] },
       { id: 'budgets', title: 'Fiscal Budgets', path: '/budgets', icon: '🏛️', roles: ['ALL'] },
       { id: 'receipts', title: 'Payment Receipts', path: '/receipts', icon: '🧾', roles: ['ALL'] }
     ]

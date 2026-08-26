@@ -213,9 +213,9 @@ export const ReportsDashboardPage = () => {
                         <span className="text-xs font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-300">{c.committee_type || 'Executive'}</span>
                       </div>
                       <div className="text-xs text-slate-300">
-                        {c.members?.map((m, idx) => (
+                        {(c.active_members || c.members)?.map((m, idx) => (
                           <div key={idx} className="py-1 border-t border-slate-800/60 flex justify-between">
-                            <span>{m.position_title}: <strong>{m.user_id ? `${m.user_id.first_name} ${m.user_id.last_name}` : 'User'}</strong></span>
+                            <span>{m.position || m.position_title || 'Member'}: <strong>{m.user_id ? `${m.user_id.first_name} ${m.user_id.last_name}` : 'User'}</strong></span>
                             <span className="text-slate-500 font-mono">{m.user_id?.email}</span>
                           </div>
                         ))}

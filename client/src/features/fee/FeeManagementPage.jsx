@@ -6,6 +6,7 @@ import {
   collectFee,
   fetchFeeReports
 } from '../../services/fee.service';
+import useAuthStore from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -14,6 +15,13 @@ import { Alert } from '../../components/ui/Alert';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 export const FeeManagementPage = () => {
+  const { user, activeOrganization } = useAuthStore();
+  const isSuperAdmin = user?.is_global_superadmin;
+  const roleName = String(activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER').toUpperCase();
+  
+  // Role Permission Guard: Only Owner, Treasurer, Admin, Moderator or SuperAdmin can collect/manage
+  const canManageFees = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'TREASURER', 'ADMIN', 'MODERATOR'].includes(roleName);
+
   const [dues, setDues] = useState([]);
   const [reports, setReports] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,9 +42,9 @@ export const FeeManagementPage = () => {
     try {
       const [duesRes, repRes] = await Promise.all([
         fetchDues({ status: statusFilter, search }),
-        fetchFeeReports()
+        canManageFees ? fetchFeeReports() : Promise.resolve({ data: null })
       ]);
-      setDues(duesRes.data);
+      setDues(duesRes.data || []);
       setReports(repRes.data);
     } catch (e) {
       console.error(e);
@@ -82,40 +90,66 @@ export const FeeManagementPage = () => {
     }
   };
 
+  // Filter personal dues for non-management member view
+  const displayDues = canManageFees
+    ? dues
+    : dues.filter(d => {
+        const memberUserId = d.member_id?.user_id?._id || d.member_id?.user_id || d.member_id;
+        return String(memberUserId) === String(user?._id);
+      });
+
+  // Calculate member personal totals
+  const myTotalPaid = displayDues.reduce((acc, curr) => acc + (curr.paid_amount || 0), 0);
+  const myTotalDue = displayDues.reduce((acc, curr) => acc + Math.max(0, (curr.due_amount || 0) + (curr.late_fee || 0) - (curr.paid_amount || 0)), 0);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+        {/* Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">UnionDesk 🇧🇩 Membership Fees Management</h1>
-            <p className="text-slate-400 mt-1">Configure dues, custom member rates, collection logs & auto-generate receipts</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                {canManageFees ? `👑 Role: ${roleName} (Collector/Manager)` : '👤 Member Personal View'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">
+              {canManageFees ? 'UnionDesk 🇧🇩 Membership Fees Management' : '💳 আমার জমা দেওয়া ফির হিসাব & রিসিট হিস্ট্রি'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {canManageFees
+                ? 'Configure dues, custom member rates, collection logs & auto-generate receipts'
+                : 'আপনার পরিশোধিত ফি, বকেয়া হিসাব, জমার তারিখ ও ডিজিটাল রিসিট হিস্ট্রি'}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <Link to="/dashboard">
-              <Button variant="secondary">Dashboard</Button>
+              <Button variant="secondary" size="sm">Dashboard</Button>
             </Link>
-            <Button variant="outline" onClick={handleGenerate} isLoading={generating}>
-              ⚡ Generate Monthly Dues
-            </Button>
+            {canManageFees && (
+              <Button variant="outline" size="sm" onClick={handleGenerate} isLoading={generating}>
+                ⚡ Generate Monthly Dues
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Dashboard Statistics Widget */}
-        {reports && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="!p-5 bg-emerald-950/40 border-emerald-500/40">
+        {/* Dashboard Statistics Widget (Admin / Manager) */}
+        {canManageFees && reports && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <Card className="!p-4 sm:!p-5 bg-emerald-950/40 border-emerald-500/40">
               <span className="text-xs font-bold text-emerald-400 uppercase">Total Collected</span>
-              <p className="text-3xl font-bold text-emerald-400 font-mono mt-1">{formatCurrency(reports.total_collected)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-400 font-mono mt-1">{formatCurrency(reports.total_collected)}</p>
             </Card>
-            <Card className="!p-5 bg-rose-950/40 border-rose-500/40">
+            <Card className="!p-4 sm:!p-5 bg-rose-950/40 border-rose-500/40">
               <span className="text-xs font-bold text-rose-400 uppercase">Outstanding Due</span>
-              <p className="text-3xl font-bold text-rose-400 font-mono mt-1">{formatCurrency(reports.total_due)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-rose-400 font-mono mt-1">{formatCurrency(reports.total_due)}</p>
             </Card>
-            <Card className="!p-5 bg-indigo-950/40 border-indigo-500/40">
+            <Card className="!p-4 sm:!p-5 bg-indigo-950/40 border-indigo-500/40">
               <span className="text-xs font-bold text-indigo-400 uppercase">Collection Rate</span>
-              <p className="text-3xl font-bold text-indigo-300 font-mono mt-1">{reports.collection_rate}%</p>
+              <p className="text-2xl sm:text-3xl font-bold text-indigo-300 font-mono mt-1">{reports.collection_rate}%</p>
             </Card>
-            <Card className="!p-5 bg-slate-900 border-slate-800">
+            <Card className="!p-4 sm:!p-5 bg-slate-900 border-slate-800">
               <span className="text-xs font-bold text-slate-400 uppercase">Member Payment Status</span>
               <p className="text-xs text-slate-300 font-mono mt-2">
                 Paid: <span className="text-emerald-400 font-bold">{reports.paid_members}</span> | Unpaid: <span className="text-rose-400 font-bold">{reports.unpaid_members}</span>
@@ -124,67 +158,108 @@ export const FeeManagementPage = () => {
           </div>
         )}
 
-        {/* Search & Status Filter */}
-        <Card className="!p-4">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="w-full md:w-96">
-              <Input
-                type="text"
-                placeholder="Search member code or name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <span className="text-xs font-semibold text-slate-400 uppercase">Status:</span>
-              <select
-                className="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="UNPAID">UNPAID</option>
-                <option value="PARTIALLY_PAID">PARTIALLY PAID</option>
-                <option value="PAID">PAID</option>
-                <option value="OVERDUE">OVERDUE</option>
-              </select>
-            </div>
+        {/* Personal Financial Summary Card (For Members) */}
+        {!canManageFees && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="!p-4 bg-emerald-950/40 border-emerald-500/40">
+              <span className="text-xs font-bold text-emerald-400 uppercase">মোট পরিশোধিত ফি (Total Paid)</span>
+              <p className="text-2xl font-bold text-emerald-400 font-mono mt-1">{formatCurrency(myTotalPaid)}</p>
+            </Card>
+            <Card className="!p-4 bg-rose-950/40 border-rose-500/40">
+              <span className="text-xs font-bold text-rose-400 uppercase">বর্তমান বকেয়া ফি (Outstanding Due)</span>
+              <p className="text-2xl font-bold text-rose-400 font-mono mt-1">{formatCurrency(myTotalDue)}</p>
+            </Card>
+            <Card className="!p-4 bg-indigo-950/40 border-indigo-500/40">
+              <span className="text-xs font-bold text-indigo-400 uppercase">মোট স্টেটমেন্ট সংখ্যা (Records)</span>
+              <p className="text-2xl font-bold text-indigo-300 font-mono mt-1">{displayDues.length} মাস</p>
+            </Card>
           </div>
-        </Card>
+        )}
 
-        {/* Dues Directory Table */}
-        <Card>
+        {/* Search & Status Filter */}
+        {canManageFees && (
+          <Card className="!p-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="w-full md:w-96">
+                <Input
+                  type="text"
+                  placeholder="Search member code or name..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <span className="text-xs font-semibold text-slate-400 uppercase">Status:</span>
+                <select
+                  className="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-auto"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="UNPAID">UNPAID</option>
+                  <option value="PARTIALLY_PAID">PARTIALLY PAID</option>
+                  <option value="PAID">PAID</option>
+                  <option value="OVERDUE">OVERDUE</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Dues & Payment Directory Table */}
+        <Card className="!p-0 sm:!p-4 overflow-hidden">
+          <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-100">
+              {canManageFees ? 'সকল মেম্বারের ফি কালেকশন লেজার' : 'আমার মেম্বারশিপ ফি ও পেমেন্ট হিস্ট্রি (Personal History)'}
+            </h2>
+            <span className="text-xs font-mono text-slate-400">{displayDues.length} টি রেকর্ড</span>
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
             </div>
-          ) : dues.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-sm">No member dues recorded. Click "⚡ Generate Monthly Dues" to initiate.</div>
+          ) : displayDues.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 text-sm">
+              {canManageFees ? 'No member dues recorded. Click "⚡ Generate Monthly Dues" to initiate.' : 'আপনার অ্যাকাউন্টে কোনো ফি জমার হিস্ট্রি নেই।'}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left text-xs sm:text-sm text-slate-300 min-w-[650px]">
                 <thead className="bg-slate-950 text-xs font-semibold uppercase text-slate-400 border-b border-slate-800">
                   <tr>
                     <th className="px-4 py-3">Member ID</th>
-                    <th className="px-4 py-3">Period</th>
-                    <th className="px-4 py-3">Due Amount</th>
+                    <th className="px-4 py-3">Period (মাস)</th>
+                    <th className="px-4 py-3">Base Due</th>
                     <th className="px-4 py-3">Paid Amount</th>
+                    <th className="px-4 py-3">Payment Channel</th>
+                    <th className="px-4 py-3">Payment Date</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Receipt</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3">Receipt No</th>
+                    {canManageFees && <th className="px-4 py-3 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {dues.map((d) => {
+                  {displayDues.map((d) => {
                     const remaining = Math.max(0, d.due_amount + d.late_fee - d.paid_amount);
                     return (
                       <tr key={d._id} className="hover:bg-slate-800/40">
                         <td className="px-4 py-3.5 font-bold font-mono text-indigo-400">
                           {d.member_id?.member_code || 'MEM-000'}
                         </td>
-                        <td className="px-4 py-3.5 font-mono text-xs text-slate-300">{d.period}</td>
+                        <td className="px-4 py-3.5 font-mono text-xs text-slate-200 font-semibold">{d.period}</td>
                         <td className="px-4 py-3.5 font-mono font-bold text-slate-100">{formatCurrency(d.due_amount)}</td>
                         <td className="px-4 py-3.5 font-mono font-bold text-emerald-400">{formatCurrency(d.paid_amount)}</td>
+                        <td className="px-4 py-3.5 font-mono text-xs text-slate-300">
+                          {d.payment_method ? (
+                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 font-bold">
+                              {d.payment_method}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-4 py-3.5 font-mono text-xs text-slate-400">
+                          {d.payment_date ? new Date(d.payment_date).toLocaleDateString() : '-'}
+                        </td>
                         <td className="px-4 py-3.5">
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
                             d.status === 'PAID' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'
@@ -193,23 +268,25 @@ export const FeeManagementPage = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-xs font-mono text-indigo-300">
-                          {d.receipt_id ? `#${d.receipt_id.receipt_number}` : 'None'}
+                          {d.receipt_id ? `#${d.receipt_id.receipt_no || d.receipt_id.receipt_number}` : 'None'}
                         </td>
-                        <td className="px-4 py-3.5 text-right">
-                          {d.status !== 'PAID' && (
-                            <button
-                              onClick={() => {
-                                setSelectedDue(d);
-                                setCollectAmount(remaining.toString());
-                                setSuccessReceipt(null);
-                                setModalError(null);
-                              }}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors"
-                            >
-                              Collect Fee
-                            </button>
-                          )}
-                        </td>
+                        {canManageFees && (
+                          <td className="px-4 py-3.5 text-right">
+                            {d.status !== 'PAID' && (
+                              <button
+                                onClick={() => {
+                                  setSelectedDue(d);
+                                  setCollectAmount(remaining.toString());
+                                  setSuccessReceipt(null);
+                                  setModalError(null);
+                                }}
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors"
+                              >
+                                Collect Fee
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -219,8 +296,8 @@ export const FeeManagementPage = () => {
           )}
         </Card>
 
-        {/* Collection Modal */}
-        {selectedDue && (
+        {/* Collection Modal (Only rendered for Authorized Manager/Collector Roles) */}
+        {canManageFees && selectedDue && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
             <div className="w-full max-w-md my-8">
               <Card>
@@ -240,11 +317,11 @@ export const FeeManagementPage = () => {
                   <div className="space-y-4 text-center py-4">
                     <div className="text-3xl">🎉</div>
                     <h4 className="text-base font-bold text-emerald-400">Payment Collected Successfully!</h4>
-                    <p className="text-xs text-slate-300">Receipt #{successReceipt.receipt_number} issued with digital QR code.</p>
+                    <p className="text-xs text-slate-300">Receipt #{successReceipt.receipt_no || successReceipt.receipt_number} issued with digital QR code.</p>
 
-                    {successReceipt.qr_code_url && (
+                    {(successReceipt.qr_code_data || successReceipt.qr_code_url) && (
                       <div className="w-24 h-24 mx-auto bg-white p-1 rounded-lg">
-                        <img src={successReceipt.qr_code_url} alt="Receipt QR" className="w-full h-full object-contain" />
+                        <img src={successReceipt.qr_code_data || successReceipt.qr_code_url} alt="Receipt QR" className="w-full h-full object-contain" />
                       </div>
                     )}
 

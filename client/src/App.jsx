@@ -6,7 +6,7 @@ import useAuthStore from './store/useAuthStore';
 import { fetchCurrentUser } from './services/auth.service';
 
 export default function App() {
-  const { setAuth, setLoading, accessToken } = useAuthStore();
+  const { setAuth, setLoading, logout, accessToken } = useAuthStore();
 
   useEffect(() => {
     const token = accessToken || localStorage.getItem('accessToken');
@@ -28,6 +28,7 @@ export default function App() {
       })
       .catch((err) => {
         console.warn('Session sync notice:', err?.message);
+        logout();
       })
       .finally(() => {
         setLoading(false);

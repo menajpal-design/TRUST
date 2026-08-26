@@ -2,6 +2,7 @@ const { verifyAccessToken } = require('../utils/jwt');
 const ApiResponse = require('../utils/apiResponse');
 const User = require('../modules/auth/user.model');
 const OrganizationMember = require('../modules/auth/organizationMember.model');
+const { runWithTenantContext } = require('../utils/tenantContext');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -60,7 +61,12 @@ const authenticate = async (req, res, next) => {
       permissions
     };
 
-    next();
+    if (activeTenantId) {
+      req.tenantId = activeTenantId;
+      runWithTenantContext(activeTenantId, () => next());
+    } else {
+      next();
+    }
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return ApiResponse.error(res, 'Token has expired', 401);

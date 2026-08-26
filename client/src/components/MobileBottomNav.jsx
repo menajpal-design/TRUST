@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import { generateFilteredNav } from '../config/navConfig';
 
-export const MobileBottomNav = ({ onOpenAIModal }) => {
+export const MobileBottomNav = () => {
   const { user, activeOrganization } = useAuthStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -37,13 +37,13 @@ export const MobileBottomNav = ({ onOpenAIModal }) => {
           <span>Chat</span>
         </NavLink>
 
-        {/* Center Floating Action Button (AI Copilot) */}
-        <button
-          onClick={onOpenAIModal}
-          className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-600/40 -mt-6 border-2 border-slate-950"
+        {/* Center Floating Action Button (Fees & Payment History) */}
+        <NavLink
+          to="/fees"
+          className="w-12 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-600/40 -mt-6 border-2 border-slate-950"
         >
-          ✨
-        </button>
+          💳
+        </NavLink>
 
         <NavLink
           to="/events"

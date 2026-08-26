@@ -4,6 +4,7 @@ import {
   fetchOrganizationDetails,
   updateOrganization
 } from '../../services/organization.service';
+import useAuthStore from '../../store/useAuthStore';
 import { MainLayout } from '../../components/MainLayout';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -13,7 +14,9 @@ import { Alert } from '../../components/ui/Alert';
 
 export const OrganizationSettingsPage = () => {
   const [searchParams] = useSearchParams();
-  const orgId = searchParams.get('org_id');
+  const { activeOrganization } = useAuthStore();
+  const paramOrgId = searchParams.get('org_id');
+  const targetOrgId = paramOrgId || activeOrganization?._id || activeOrganization?.id;
 
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(true);
@@ -74,8 +77,12 @@ export const OrganizationSettingsPage = () => {
   });
 
   useEffect(() => {
+    if (!targetOrgId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    fetchOrganizationDetails(orgId)
+    fetchOrganizationDetails(targetOrgId)
       .then((res) => {
         const org = res.data;
         setFormData({
@@ -94,7 +101,7 @@ export const OrganizationSettingsPage = () => {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [orgId]);
+  }, [targetOrgId]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -103,7 +110,7 @@ export const OrganizationSettingsPage = () => {
     setSuccess(null);
 
     try {
-      await updateOrganization(orgId, formData);
+      await updateOrganization(targetOrgId, formData);
       setSuccess('Enterprise Settings saved and applied successfully');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save settings');
@@ -137,7 +144,6 @@ export const OrganizationSettingsPage = () => {
     { id: 'backup', title: '💾 Backup & Data Export', desc: 'Automated Backups & Export' },
     { id: 'audit', title: '📜 System Audit Logs', desc: 'Activities & Security Logs' },
     { id: 'subscription', title: '💳 Subscription & Billing', desc: 'SaaS Plan & Invoices' },
-    { id: 'ai', title: '✨ AI ERP Copilot Settings', desc: 'Gemini Assistant & Summaries' },
     { id: 'api', title: '🔌 API Keys & Webhooks', desc: 'Integrations & Keys' },
     { id: 'system', title: '🖥️ System & SMTP Server', desc: 'Maintenance Mode & Queues' }
   ];

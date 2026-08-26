@@ -24,7 +24,6 @@ export const CommandPaletteModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const commands = [
-    { title: '✨ Open AI Copilot Assistant', category: 'AI Copilot', path: '#ai', action: 'modal' },
     { title: '💰 Donations & Campaign Management', category: 'Finance', path: '/donations' },
     { title: '🎟️ Events & QR Ticket Check-In', category: 'Events', path: '/events' },
     { title: '💬 Real-Time Workspaces & Chat', category: 'Communication', path: '/chat' },

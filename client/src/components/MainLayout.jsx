@@ -3,12 +3,10 @@ import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { Breadcrumbs } from './Breadcrumbs';
 import { MobileBottomNav } from './MobileBottomNav';
-import { AIAssistantModal } from './AIAssistantModal';
 import { CommandPaletteModal } from './ui/CommandPaletteModal';
 
 export const MainLayout = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   return (
@@ -24,7 +22,6 @@ export const MainLayout = ({ children }) => {
         {/* Top Navbar */}
         <Navbar
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          onOpenAIModal={() => setIsAIModalOpen(true)}
         />
 
         {/* Dynamic Route Breadcrumbs */}
@@ -37,10 +34,7 @@ export const MainLayout = ({ children }) => {
       </div>
 
       {/* Mobile Bottom Navigation & Drawer */}
-      <MobileBottomNav onOpenAIModal={() => setIsAIModalOpen(true)} />
-
-      {/* AI Copilot Modal */}
-      <AIAssistantModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
+      <MobileBottomNav />
 
       {/* Command Palette Modal (Ctrl + K) */}
       <CommandPaletteModal isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />

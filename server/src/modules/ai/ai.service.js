@@ -4,7 +4,7 @@ const FinanceService = require('../finance/finance.service');
 
 class AIService {
   static async generateFinancialInsights(organizationId) {
-    const summary = await FinanceService.getExecutiveSummary(organizationId);
+    const summary = await FinanceService.getSummary(organizationId);
 
     const approvedExpenses = await Transaction.find({
       organization_id: organizationId,
@@ -27,14 +27,16 @@ class AIService {
       }
     });
 
-    const healthScore = summary.net_balance >= 0 ? (summary.total_income > 0 ? 88 : 70) : 45;
+    const currentBalance = summary.current_balance || 0;
+    const pendingCount = summary.pending_approvals_count || 0;
+    const healthScore = currentBalance >= 0 ? (summary.total_income > 0 ? 88 : 70) : 45;
     const financialStatus = healthScore > 75 ? 'Healthy & Positive Reserve' : 'Requires Expense Control';
 
     const insights = [
-      `Overall Fund Reserve is $${summary.net_balance.toFixed(2)} USD with a financial health score of ${healthScore}/100 (${financialStatus}).`,
+      `Overall Fund Reserve is $${currentBalance.toFixed(2)} USD with a financial health score of ${healthScore}/100 (${financialStatus}).`,
       `Highest operational expenditure category is "${topCategory}" totaling $${topCategoryAmount.toFixed(2)} USD.`,
-      summary.pending_approvals > 0
-        ? `Attention Required: There are ${summary.pending_approvals} pending transaction voucher(s) awaiting managerial approval.`
+      pendingCount > 0
+        ? `Attention Required: There are ${pendingCount} pending transaction voucher(s) awaiting managerial approval.`
         : 'All transaction vouchers have been processed and approved.',
       `Strategic Recommendation: Maintain liquid bank reserves of at least 25% of total income to safeguard against unforeseen operational costs.`
     ];
@@ -42,7 +44,7 @@ class AIService {
     return {
       health_score: healthScore,
       status: financialStatus,
-      net_reserve: summary.net_balance,
+      net_reserve: currentBalance,
       top_spending_category: topCategory,
       insights
     };

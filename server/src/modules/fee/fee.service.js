@@ -153,13 +153,13 @@ class FeeService {
     due.transaction_id = transaction._id;
 
     // 2. Generate Receipt
-    const receipt = await ReceiptService.createReceipt(organizationId, collectorUserId, {
+    const receipt = await ReceiptService.createReceipt(organizationId, {
       transaction_id: transaction._id,
       member_id: due.member_id._id,
-      paid_by_name: due.member_id?.member_code || 'Member',
-      amount_paid: payAmount,
+      payer_name: due.member_id?.member_code || 'Member',
+      amount: payAmount,
       payment_method: due.payment_method,
-      notes: `Membership Fee collection for period ${due.period}. ${remarks || ''}`
+      description: `Membership Fee collection for period ${due.period}.`
     });
 
     due.receipt_id = receipt._id;
@@ -172,7 +172,7 @@ class FeeService {
       action: 'FEE_COLLECTED',
       entity_type: 'MemberFeeDue',
       entity_id: due._id.toString(),
-      details: `Collected $${payAmount} for period ${due.period} via ${due.payment_method}. Issued Receipt #${receipt.receipt_number}`
+      details: `Collected $${payAmount} for period ${due.period} via ${due.payment_method}. Issued Receipt #${receipt.receipt_no}`
     });
 
     return { due, receipt, transaction };
