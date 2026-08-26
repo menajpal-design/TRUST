@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
+import { MainLayout } from '../components/MainLayout';
 
 export const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -17,5 +18,9 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  );
 };
