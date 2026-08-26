@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 import { fetchMembers } from '../../services/member.service';
-import { fetchFeeReports } from '../../services/fee.service';
+import { fetchFeeReports, fetchDues } from '../../services/fee.service';
 import { fetchCommittees } from '../../services/committee.service';
+import { fetchReceipts } from '../../services/receipt.service';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CommandPaletteModal } from '../../components/ui/CommandPaletteModal';
@@ -32,24 +33,46 @@ export const DashboardOverviewPage = () => {
     let isMounted = true;
     const loadStats = async () => {
       try {
-        const [memRes, feeRes, comRes] = await Promise.allSettled([
+        const [memRes, feeRes, comRes, duesRes, recRes] = await Promise.allSettled([
           fetchMembers(),
           fetchFeeReports(),
-          fetchCommittees()
+          fetchCommittees(),
+          fetchDues(),
+          fetchReceipts()
         ]);
 
-        const memberCount = memRes.status === 'fulfilled' ? (memRes.value.data?.meta?.totalDocs || memRes.value.data?.docs?.length || 0) : 0;
+        const memberCount = memRes.status === 'fulfilled' ? (memRes.value.data?.meta?.totalDocs || memRes.value.data?.docs?.length || (Array.isArray(memRes.value.data) ? memRes.value.data.length : 0)) : 0;
         const totalCollected = feeRes.status === 'fulfilled' ? (feeRes.value.data?.total_collected || 0) : 0;
         const committeeCount = comRes.status === 'fulfilled' ? (comRes.value.data?.length || 0) : 0;
+
+        let myPaid = 0;
+        let myDue = 0;
+        if (duesRes.status === 'fulfilled') {
+          const allDues = duesRes.value.data || [];
+          const myDues = allDues.filter(d => {
+            const uId = d.member_id?.user_id?._id || d.member_id?.user_id || d.member_id?._id || d.member_id;
+            return String(uId) === String(user?._id);
+          });
+          myPaid = myDues.reduce((acc, curr) => acc + (curr.paid_amount || 0), 0);
+          myDue = myDues.reduce((acc, curr) => acc + Math.max(0, (curr.due_amount || 0) + (curr.late_fee || 0) - (curr.paid_amount || 0)), 0);
+        }
+
+        let myRecCount = 0;
+        if (recRes.status === 'fulfilled') {
+          const allRecs = recRes.value.data || [];
+          const userName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim().toLowerCase();
+          const myRecs = allRecs.filter(r => (r.payer_name || '').toLowerCase().includes(userName));
+          myRecCount = myRecs.length;
+        }
 
         if (isMounted) {
           setStats({
             memberCount,
             totalCollected,
             committeeCount,
-            myTotalPaid: 1200,
-            myTotalDue: 200,
-            myReceiptsCount: 6,
+            myTotalPaid: myPaid,
+            myTotalDue: myDue,
+            myReceiptsCount: myRecCount,
             loading: false
           });
         }
@@ -61,7 +84,7 @@ export const DashboardOverviewPage = () => {
 
     loadStats();
     return () => { isMounted = false; };
-  }, [activeOrganization?._id]);
+  }, [activeOrganization?._id, user?._id]);
 
   return (
     <div className="space-y-6 md:space-y-8">

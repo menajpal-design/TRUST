@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchMembers } from '../../services/member.service';
+import { fetchCampaigns } from '../../services/donation.service';
 import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -8,48 +9,34 @@ import { Button } from '../../components/ui/Button';
 export const BloodReliefDirectoryPage = () => {
   const { user } = useAuthStore();
   const [members, setMembers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bloodGroup, setBloodGroup] = useState('');
   const [search, setSearch] = useState('');
 
-  // Personal blood donation state
+  // Personal blood donation state - clean real user tracking without demo defaults
   const [hasDonated, setHasDonated] = useState(() => localStorage.getItem(`blood_donated_${user?._id}`) === 'true');
-  const [lastDonationDate, setLastDonationDate] = useState(() => localStorage.getItem(`blood_date_${user?._id}`) || '2025-11-10');
+  const [lastDonationDate, setLastDonationDate] = useState(() => localStorage.getItem(`blood_date_${user?._id}`) || '');
   const [isAvailableDonor, setIsAvailableDonor] = useState(() => localStorage.getItem(`blood_avail_${user?._id}`) !== 'false');
-  const [donationCount, setDonationCount] = useState(() => parseInt(localStorage.getItem(`blood_count_${user?._id}`) || '3', 10));
+  const [donationCount, setDonationCount] = useState(() => parseInt(localStorage.getItem(`blood_count_${user?._id}`) || '0', 10));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inputDate, setInputDate] = useState('');
   const [donationPlace, setDonationPlace] = useState('');
-
-  const bloodCampaigns = [
-    {
-      id: 'camp-1',
-      title: '🩸 জাতীয় রক্তদান দিবস উপলক্ষে ফ্রি ব্লাড গ্রুপিং ও স্বেচ্ছায় রক্তদান ক্যাম্প',
-      venue: 'ঢাকা মেডিকেল কলেজ অডিটোরিয়াম ও ইউনিয়ন পরিষদ প্রাঙ্গণ',
-      date: '২৮ আগস্ট ২০২৬ (সকাল ৯টা - বিকাল ৫টা)',
-      organizer: 'UnionDesk হেলথ উইং & রেড ক্রিসেন্ট',
-      target_bags: 150,
-      collected_bags: 92,
-      status: 'ACTIVE'
-    },
-    {
-      id: 'camp-2',
-      title: '🚑 থ্যালাসেমিয়া রোগীদের জন্য জরুরি রক্তদান ক্যাম্পেইন',
-      venue: 'সেন্ট্রাল হসপিটাল ব্লাড ব্যাংক শাখা',
-      date: '০৫ সেপ্টেম্বর ২০২৬ (সকাল ১০টা - রাত ৮টা)',
-      organizer: 'যুব কল্যাণ পরিষদ ও সেন্ট্রাল ট্রাস্ট',
-      target_bags: 80,
-      collected_bags: 34,
-      status: 'UPCOMING'
-    }
-  ];
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetchMembers({ search });
-        setMembers(res.data?.docs || res.data || []);
+        const [memRes, campRes] = await Promise.allSettled([
+          fetchMembers({ search }),
+          fetchCampaigns()
+        ]);
+        if (memRes.status === 'fulfilled') {
+          setMembers(memRes.value.data?.docs || memRes.value.data || []);
+        }
+        if (campRes.status === 'fulfilled') {
+          setCampaigns(campRes.value.data || []);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -183,51 +170,45 @@ export const BloodReliefDirectoryPage = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <span>🚩</span> চলমান ব্লাড ক্যাম্পেইন ও রক্তদান ড্রাইভ
+              <span>🚩</span> চলমান ব্লাড ক্যাম্পেইন & স্বাস্থ্য ড্রাইভ
             </h2>
-            <span className="text-xs font-mono text-rose-400">{bloodCampaigns.length} টি ক্যাম্পেইন সক্রিয়</span>
+            <span className="text-xs font-mono text-rose-400">{campaigns.length} টি ক্যাম্পেইন</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {bloodCampaigns.map((c) => {
-              const pct = Math.min(100, Math.round((c.collected_bags / c.target_bags) * 100));
-              return (
-                <Card key={c.id} className="!p-5 space-y-3 hover:border-rose-500/50 transition-all">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 uppercase">
-                      {c.status}
-                    </span>
-                    <span className="text-xs font-mono text-emerald-400 font-bold">
-                      {c.collected_bags} / {c.target_bags} ব্যাগ সংগ্রহ
-                    </span>
-                  </div>
-
-                  <h3 className="text-base font-bold text-slate-100 leading-snug">{c.title}</h3>
-
-                  <div className="space-y-1 text-xs text-slate-400">
-                    <div>📍 স্থান: <strong className="text-slate-200">{c.venue}</strong></div>
-                    <div>🗓️ সময়সূচি: <strong className="text-slate-200">{c.date}</strong></div>
-                    <div>🤝 আয়োজনে: <strong className="text-indigo-400">{c.organizer}</strong></div>
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                      <div className="h-full bg-rose-500 transition-all" style={{ width: `${pct}%` }}></div>
+          {campaigns.length === 0 ? (
+            <Card className="!p-6 text-center text-slate-500 text-sm">
+              বর্তমানে কোনো বিশেষ রক্তদান বা স্বাস্থ্য ক্যাম্পেইন পরিচালিত হচ্ছে না।
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {campaigns.map((c) => {
+                const target = c.target_amount || 100;
+                const raised = c.raised_amount || 0;
+                const pct = Math.min(100, Math.round((raised / target) * 100));
+                return (
+                  <Card key={c._id} className="!p-5 space-y-3 hover:border-rose-500/50 transition-all">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 uppercase">
+                        {c.status}
+                      </span>
+                      <span className="text-xs font-mono text-emerald-400 font-bold">
+                        {pct}% সম্পন্ন
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="pt-2">
-                    <button
-                      onClick={() => alert(`ক্যাম্পেইনে অংশগ্রহণের জন্য ধন্যবাদ! লোকেশন: ${c.venue}`)}
-                      className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-900/60 rounded-lg text-xs font-bold transition-all"
-                    >
-                      🩸 ক্যাম্পেইনে রক্তদান করতে নাম লেখান
-                    </button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                    <h3 className="text-base font-bold text-slate-100 leading-snug">{c.title}</h3>
+                    <p className="text-xs text-slate-400 line-clamp-2">{c.description}</p>
+
+                    <div className="space-y-1 pt-1">
+                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div className="h-full bg-rose-500 transition-all" style={{ width: `${pct}%` }}></div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* EMERGENCY DONOR DIRECTORY SECTION */}
@@ -272,35 +253,47 @@ export const BloodReliefDirectoryPage = () => {
             <div className="text-center py-12 text-slate-500 text-sm">নির্বাচিত গ্রুপে কোনো রক্তদাতা পাওয়া যায়নি।</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredMembers.map((m) => (
-                <Card key={m._id} className="!p-5 space-y-3 relative">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-black text-rose-400 font-mono px-3 py-1 bg-rose-950/60 border border-rose-800 rounded-xl">
-                      🩸 {m.blood_group || 'O+'}
-                    </span>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
-                      AVAILABLE DONOR
-                    </span>
-                  </div>
+              {filteredMembers.map((m) => {
+                const phone = m.phone || m.user_id?.phone;
+                return (
+                  <Card key={m._id} className="!p-5 space-y-3 relative">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-black text-rose-400 font-mono px-3 py-1 bg-rose-950/60 border border-rose-800 rounded-xl">
+                        🩸 {m.blood_group || 'O+'}
+                      </span>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
+                        AVAILABLE DONOR
+                      </span>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-100">{m.user_id?.first_name} {m.user_id?.last_name}</h3>
-                    <p className="text-xs text-slate-400">{m.position_title} • Code: {m.member_code}</p>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-100">{m.user_id?.first_name} {m.user_id?.last_name}</h3>
+                      <p className="text-xs text-slate-400">{m.position_title || 'Member'} • Code: {m.member_code || '-'}</p>
+                    </div>
 
-                  <div className="pt-3 border-t border-slate-800 text-xs space-y-1 font-mono text-slate-300">
-                    <div>📍 Location: {m.address || 'Dhaka, Bangladesh'}</div>
-                    <div>📞 Phone: <strong>{m.phone || m.user_id?.phone || '+880 1700-000000'}</strong></div>
-                  </div>
+                    <div className="pt-3 border-t border-slate-800 text-xs space-y-1 font-mono text-slate-300">
+                      <div>📍 Location: {m.address || 'তথ্য নেই'}</div>
+                      <div>📞 Phone: <strong>{phone || 'তথ্য নেই'}</strong></div>
+                    </div>
 
-                  <a
-                    href={`tel:${m.phone || '+8801700000000'}`}
-                    className="block w-full text-center py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-all"
-                  >
-                    📞 Call Emergency Donor
-                  </a>
-                </Card>
-              ))}
+                    {phone ? (
+                      <a
+                        href={`tel:${phone}`}
+                        className="block w-full text-center py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-all"
+                      >
+                        📞 Call Emergency Donor
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="block w-full text-center py-2 bg-slate-800 text-slate-500 font-bold text-xs rounded-lg cursor-not-allowed"
+                      >
+                        📞 ফোন নম্বর দেওয়া নেই
+                      </button>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

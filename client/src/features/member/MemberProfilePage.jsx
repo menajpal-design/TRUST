@@ -120,17 +120,17 @@ export const MemberProfilePage = () => {
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-indigo-300 font-mono">
-                মেম্বার আইডি কোড: <strong className="text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">{memberRecord?.member_code || 'MEM-2026-0001'}</strong>
+                মেম্বার আইডি কোড: <strong className="text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">{memberRecord?.member_code || 'নির্ধারিত হয়নি'}</strong>
               </p>
               <div className="flex flex-wrap justify-center md:justify-start gap-2 text-xs">
                 <span className="bg-slate-900/80 border border-slate-800 px-3 py-1 rounded-lg text-slate-300">
-                  🏛️ সংস্থা: <strong className="text-emerald-400">{activeOrganization?.name || 'UnionDesk BD'}</strong>
+                  🏛️ সংস্থা: <strong className="text-emerald-400">{activeOrganization?.name || 'আমার সংস্থা'}</strong>
                 </span>
                 <span className="bg-slate-900/80 border border-slate-800 px-3 py-1 rounded-lg text-slate-300">
-                  👥 পদবি: <strong className="text-purple-300">{memberRecord?.position_title || 'General Member'}</strong>
+                  👥 পদবি: <strong className="text-purple-300">{memberRecord?.position_title || 'সাধারণ সদস্য'}</strong>
                 </span>
                 <span className="bg-slate-900/80 border border-slate-800 px-3 py-1 rounded-lg text-slate-300">
-                  🩸 রক্তের গ্রুপ: <strong className="text-rose-400">{memberRecord?.blood_group || 'O+'}</strong>
+                  🩸 রক্তের গ্রুপ: <strong className="text-rose-400">{memberRecord?.blood_group || 'তথ্য নেই'}</strong>
                 </span>
               </div>
             </div>
@@ -155,7 +155,7 @@ export const MemberProfilePage = () => {
               {memberRecord?.fee_profile?.fee_frequency || 'MONTHLY'} • {memberRecord?.fee_profile?.fee_status || 'ACTIVE'}
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
-              মাসিক ফি রেট: {formatCurrency(memberRecord?.fee_profile?.custom_fee_amount || 200)}
+              মাসিক ফি রেট: {formatCurrency(memberRecord?.fee_profile?.custom_fee_amount || 0)}
             </p>
           </Card>
         </div>
@@ -253,25 +253,25 @@ export const MemberProfilePage = () => {
             </div>
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
               <span className="text-slate-500 font-bold uppercase text-[10px] block">মোবাইল ফোন নম্বর</span>
-              <strong className="text-emerald-400 font-mono">{memberRecord?.phone || currentUser?.phone || '+880 1700-000000'}</strong>
+              <strong className="text-emerald-400 font-mono">{memberRecord?.phone || currentUser?.phone || 'তথ্য দেওয়া নেই'}</strong>
             </div>
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
               <span className="text-slate-500 font-bold uppercase text-[10px] block">সদস্যপদের ধরন (Tier)</span>
-              <strong className="text-indigo-400">{memberRecord?.membership_type || 'GENERAL MEMBER'}</strong>
+              <strong className="text-indigo-400">{memberRecord?.membership_type || 'GENERAL'}</strong>
             </div>
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
               <span className="text-slate-500 font-bold uppercase text-[10px] block">যোগদানের তারিখ</span>
               <strong className="text-slate-300 font-mono">
-                {memberRecord?.joining_date ? new Date(memberRecord.joining_date).toLocaleDateString() : '01/01/2026'}
+                {memberRecord?.joining_date ? new Date(memberRecord.joining_date).toLocaleDateString() : 'তথ্য নেই'}
               </strong>
             </div>
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
               <span className="text-slate-500 font-bold uppercase text-[10px] block">বর্তমান ঠিকানা</span>
-              <strong className="text-slate-300">{memberRecord?.address || 'Dhaka, Bangladesh'}</strong>
+              <strong className="text-slate-300">{memberRecord?.address || 'তথ্য নেই'}</strong>
             </div>
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
               <span className="text-slate-500 font-bold uppercase text-[10px] block">জরুরি যোগাযোগ</span>
-              <strong className="text-rose-300 font-mono">{memberRecord?.emergency_contact || '+880 1800-000000'}</strong>
+              <strong className="text-rose-300 font-mono">{memberRecord?.emergency_contact || 'তথ্য নেই'}</strong>
             </div>
           </div>
         </Card>
