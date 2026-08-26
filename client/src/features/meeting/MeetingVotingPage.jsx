@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { fetchMeetings, createMeeting, addMeetingResolution, fetchVotes, createVote, castVote } from '../../services/meeting.service';
+import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 
 export const MeetingVotingPage = () => {
-  const [activeTab, setActiveTab] = useState('meetings');
+  const { user, activeOrganization } = useAuthStore();
+  const isSuperAdmin = user?.is_global_superadmin;
+  const userRole = String(activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER').toUpperCase();
+  const canManage = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'MODERATOR'].includes(userRole);
+
+  const [activeTab, setActiveTab] = useState('voting');
   const [meetings, setMeetings] = useState([]);
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +29,6 @@ export const MeetingVotingPage = () => {
     setLoading(true);
     try {
       const [mRes, vRes] = await Promise.all([fetchMeetings(), fetchVotes()]);
-      // Server returns { success, data: [...] }
       setMeetings(Array.isArray(mRes.data) ? mRes.data : (mRes.data?.docs || []));
       setVotes(Array.isArray(vRes.data) ? vRes.data : (vRes.data?.docs || []));
     } catch (e) {
@@ -32,7 +37,6 @@ export const MeetingVotingPage = () => {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     loadData();
@@ -84,21 +88,30 @@ export const MeetingVotingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">📋 Meeting Resolutions & E-Voting Polls</h1>
-            <p className="text-slate-400 mt-1">Schedule executive meetings, record Minutes of Meeting (MoM) & run secret digital election votes</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800">
+                {canManage ? `👑 Role: ${userRole} (Governance Manager)` : '🗳️ Member Voting & Meetings'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">🗳️ অনলাইন ভোটিং & মিটিং রেজোলিউশন</h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              সংস্থার নির্বাচনে ও পলিসি নির্ধারণে গোপন অনলাইন ব্যালটে ভোট প্রদান ও সভার কার্যবিবরণী (MoM)
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => setIsVoteModalOpen(true)}>
-              🗳️ Create E-Vote Poll
-            </Button>
-            <Button onClick={() => setIsMeetingModalOpen(true)}>
-              + Schedule Meeting
-            </Button>
-          </div>
+          {canManage && (
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Button variant="secondary" size="sm" onClick={() => setIsVoteModalOpen(true)}>
+                🗳️ Create E-Vote Poll
+              </Button>
+              <Button size="sm" onClick={() => setIsMeetingModalOpen(true)}>
+                + Schedule Meeting
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}

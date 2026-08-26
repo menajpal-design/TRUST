@@ -41,6 +41,42 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
     change_reason: ''
   });
 
+  React.useEffect(() => {
+    if (member) {
+      const u = member.user_id || {};
+      const fp = member.fee_profile || {};
+      setFormData({
+        first_name: u.first_name || '',
+        last_name: u.last_name || '',
+        email: u.email || '',
+        phone: member.phone || '',
+        address: member.address || '',
+        member_code: member.member_code || '',
+        membership_type: member.membership_type || 'GENERAL',
+        status: member.status || 'ACTIVE',
+        committee_level: member.committee_level || 'NONE',
+        position_title: member.position_title || 'Member',
+        system_role: member.role_id?.name || 'MEMBER',
+        custom_permissions: member.custom_permissions || [],
+        fee_profile: {
+          custom_fee_amount: fp.custom_fee_amount !== null && fp.custom_fee_amount !== undefined ? fp.custom_fee_amount : '',
+          fee_frequency: fp.fee_frequency || 'MONTHLY',
+          fee_start_date: fp.fee_start_date ? new Date(fp.fee_start_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          next_due_date: fp.next_due_date ? new Date(fp.next_due_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          grace_period_days: fp.grace_period_days || 5,
+          late_fee_amount: fp.late_fee_amount || 10,
+          late_fee_type: fp.late_fee_type || 'FIXED',
+          fee_status: fp.fee_status || 'ACTIVE',
+          auto_generate_due: fp.auto_generate_due !== undefined ? fp.auto_generate_due : true,
+          auto_send_reminder: fp.auto_send_reminder !== undefined ? fp.auto_send_reminder : true,
+          auto_generate_receipt: fp.auto_generate_receipt !== undefined ? fp.auto_generate_receipt : true
+        },
+        change_reason: ''
+      });
+      setError(null);
+    }
+  }, [member]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

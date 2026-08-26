@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { fetchDocuments, uploadDocument, deleteDocument } from '../../services/document.service';
+import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 
 export const DocumentVaultPage = () => {
+  const { user, activeOrganization } = useAuthStore();
+  const isSuperAdmin = user?.is_global_superadmin;
+  const userRole = String(activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER').toUpperCase();
+  const canManageDocs = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('');
@@ -53,16 +59,25 @@ export const DocumentVaultPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">📂 Central Document & Constitution Vault</h1>
-            <p className="text-slate-400 mt-1">Store, manage & download constitution (গঠনতন্ত্র), audit reports & legal resolutions</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                {canManageDocs ? `👑 Role: ${userRole} (Vault Manager)` : '📂 Constitution & Vault'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">📂 গঠনতন্ত্র & অফিসিয়াল ডকুমেন্ট ভল্ট</h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              সংস্থার মূল গঠনতন্ত্র (Constitution), অডিট রিপোর্ট, সভার রেজোলিউশন ও অফিশিয়াল সার্টিফিকেট সংগ্রহ ও ডাউনলোড
+            </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            + Upload Document
-          </Button>
+          {canManageDocs && (
+            <Button size="sm" onClick={() => setIsModalOpen(true)}>
+              + Upload Document
+            </Button>
+          )}
         </div>
 
         {/* Filter Bar */}

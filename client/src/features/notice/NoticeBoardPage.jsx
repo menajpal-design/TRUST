@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { fetchNotices, createNotice, deleteNotice } from '../../services/notice.service';
+import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 
 export const NoticeBoardPage = () => {
+  const { user, activeOrganization } = useAuthStore();
+  const isSuperAdmin = user?.is_global_superadmin;
+  const userRole = String(activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER').toUpperCase();
+  const canManageNotices = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'MODERATOR'].includes(userRole);
+
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -24,7 +30,6 @@ export const NoticeBoardPage = () => {
     setLoading(true);
     try {
       const res = await fetchNotices({ search, category });
-      // Server returns { success, data: [...], meta }
       setNotices(Array.isArray(res.data) ? res.data : (res.data?.docs || []));
     } catch (e) {
       console.error(e);
@@ -32,7 +37,6 @@ export const NoticeBoardPage = () => {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     loadNotices();
@@ -67,16 +71,25 @@ export const NoticeBoardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">📢 Digital Notice Board & Broadcast Engine</h1>
-            <p className="text-slate-400 mt-1">Publish emergency announcements, general notices, election notices & multi-channel broadcasts</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                {canManageNotices ? `👑 Role: ${userRole} (Publisher)` : '📢 Official Notice Board'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">📢 ডিজিটাল নোটিশ বোর্ড & ব্রডকাস্ট</h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              সংস্থার জরুরি ঘোষণা, প্রশাসনিক নোটিশ, নির্বাচন ও সাধারণ নির্দেশিকা
+            </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            + Publish New Notice
-          </Button>
+          {canManageNotices && (
+            <Button size="sm" onClick={() => setIsModalOpen(true)}>
+              + Publish New Notice
+            </Button>
+          )}
         </div>
 
         {/* Filter Bar */}
@@ -111,7 +124,7 @@ export const NoticeBoardPage = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
           </div>
         ) : notices.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">No notices published yet. Click "+ Publish New Notice".</div>
+          <div className="text-center py-12 text-slate-500 text-sm">কোনো নোটিশ প্রকাশিত হয়নি।</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {notices.map((n) => (
@@ -121,7 +134,9 @@ export const NoticeBoardPage = () => {
                     <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${priorityColor(n.priority)}`}>
                       {n.priority} • {n.category}
                     </span>
-                    <button onClick={() => handleDelete(n._id)} className="text-xs text-rose-400 hover:text-rose-300 font-bold">✕</button>
+                    {canManageNotices && (
+                      <button onClick={() => handleDelete(n._id)} className="text-xs text-rose-400 hover:text-rose-300 font-bold">✕</button>
+                    )}
                   </div>
                   <h3 className="text-lg font-bold text-slate-100">{n.title}</h3>
                   <p className="text-xs text-slate-300 whitespace-pre-line mt-2 leading-relaxed">{n.content}</p>
