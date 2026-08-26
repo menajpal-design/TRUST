@@ -14,9 +14,14 @@ import { Alert } from '../../components/ui/Alert';
 
 export const OrganizationSettingsPage = () => {
   const [searchParams] = useSearchParams();
-  const { activeOrganization } = useAuthStore();
+  const { user, activeOrganization } = useAuthStore();
   const paramOrgId = searchParams.get('org_id');
   const targetOrgId = paramOrgId || activeOrganization?._id || activeOrganization?.id;
+
+  const isSuperAdmin = user?.is_global_superadmin;
+  const rawRole = activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER';
+  const userRole = String(rawRole).toUpperCase();
+  const canManageSettings = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
 
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(true);
@@ -147,6 +152,23 @@ export const OrganizationSettingsPage = () => {
     { id: 'api', title: '🔌 API Keys & Webhooks', desc: 'Integrations & Keys' },
     { id: 'system', title: '🖥️ System & SMTP Server', desc: 'Maintenance Mode & Queues' }
   ];
+
+  if (!canManageSettings) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-rose-950/80 border border-rose-800 flex items-center justify-center text-3xl mb-4">
+          🔒
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">অনুমতি নেই (Access Restricted)</h2>
+        <p className="text-slate-400 text-sm max-w-md mb-6">
+          সংস্থার সেটিংস এবং কনফিগারেশন পরিবর্তন করার অনুমতি শুধুমাত্র অর্গানাইজেশন ওনার এবং অ্যাডমিনদের জন্য।
+        </p>
+        <Link to="/dashboard">
+          <Button>ড্যাশবোর্ডে ফিরে যান</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">

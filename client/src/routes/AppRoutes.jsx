@@ -31,8 +31,12 @@ import { MemberProfilePage } from '../features/member/MemberProfilePage';
 import { DocumentVaultPage } from '../features/document/DocumentVaultPage';
 
 import { ProtectedRoute } from './ProtectedRoute';
+import { RoleProtectedRoute } from './RoleProtectedRoute';
 
 export const AppRoutes = () => {
+  const MANAGEMENT_ROLES = ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'];
+  const SETTINGS_ROLES = ['ORG_OWNER', 'OWNER', 'ADMIN'];
+
   return (
     <Routes>
       {/* Public Routes */}
@@ -43,33 +47,44 @@ export const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-receipt" element={<PublicVerifyReceiptPage />} />
 
-      {/* Protected Routes */}
+      {/* Protected Routes (Authenticated) */}
       <Route element={<ProtectedRoute />}>
+        {/* Accessible to ALL authenticated users including MEMBER */}
         <Route path="/dashboard" element={<DashboardOverviewPage />} />
         <Route path="/profile" element={<MemberProfilePage />} />
-        <Route path="/settings" element={<OrganizationSettingsPage />} />
-        <Route path="/organizations" element={<OrganizationListPage />} />
-        <Route path="/organizations/settings" element={<OrganizationSettingsPage />} />
-        <Route path="/committees" element={<CommitteeListPage />} />
-        <Route path="/committees/:id" element={<CommitteeDetailsPage />} />
-        <Route path="/members" element={<MemberListPage />} />
-        <Route path="/finance" element={<FinanceDashboardPage />} />
-        <Route path="/receipts" element={<ReceiptListPage />} />
-        <Route path="/budgets" element={<BudgetListPage />} />
-        <Route path="/chat" element={<ChatDashboardPage />} />
-        <Route path="/reports" element={<ReportsDashboardPage />} />
-        <Route path="/donations" element={<DonationDashboardPage />} />
-        <Route path="/events" element={<EventDashboardPage />} />
-        <Route path="/superadmin" element={<SuperAdminDashboardPage />} />
         <Route path="/fees" element={<FeeManagementPage />} />
-        <Route path="/locations" element={<LocationManagementPage />} />
-
-        {/* 5 New High-Impact Modules */}
-        <Route path="/notices" element={<NoticeBoardPage />} />
-        <Route path="/meetings" element={<MeetingVotingPage />} />
+        <Route path="/receipts" element={<ReceiptListPage />} />
         <Route path="/idcard" element={<MemberIDCardPage />} />
         <Route path="/blood-relief" element={<BloodReliefDirectoryPage />} />
+        <Route path="/donations" element={<DonationDashboardPage />} />
+        <Route path="/meetings" element={<MeetingVotingPage />} />
+        <Route path="/notices" element={<NoticeBoardPage />} />
         <Route path="/documents" element={<DocumentVaultPage />} />
+        <Route path="/events" element={<EventDashboardPage />} />
+        <Route path="/chat" element={<ChatDashboardPage />} />
+
+        {/* Management Routes - Hidden & Blocked for General MEMBER */}
+        <Route element={<RoleProtectedRoute allowedRoles={MANAGEMENT_ROLES} />}>
+          <Route path="/members" element={<MemberListPage />} />
+          <Route path="/committees" element={<CommitteeListPage />} />
+          <Route path="/committees/:id" element={<CommitteeDetailsPage />} />
+          <Route path="/finance" element={<FinanceDashboardPage />} />
+          <Route path="/budgets" element={<BudgetListPage />} />
+          <Route path="/reports" element={<ReportsDashboardPage />} />
+          <Route path="/locations" element={<LocationManagementPage />} />
+          <Route path="/organizations" element={<OrganizationListPage />} />
+        </Route>
+
+        {/* Organization Settings - Hidden & Blocked for General MEMBER */}
+        <Route element={<RoleProtectedRoute allowedRoles={SETTINGS_ROLES} />}>
+          <Route path="/settings" element={<OrganizationSettingsPage />} />
+          <Route path="/organizations/settings" element={<OrganizationSettingsPage />} />
+        </Route>
+
+        {/* SuperAdmin Only Route */}
+        <Route element={<RoleProtectedRoute superAdminOnly={true} />}>
+          <Route path="/superadmin" element={<SuperAdminDashboardPage />} />
+        </Route>
       </Route>
 
       {/* Fallback */}
