@@ -26,16 +26,6 @@ export const CommitteeListPage = () => {
     loadCommittees();
   }, [filterStatus]);
 
-  const handleSeedBD = async () => {
-    try {
-      const res = await seedBDCommittees();
-      alert(res.message);
-      loadCommittees();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Seeding failed');
-    }
-  };
-
   const getCommitteeTypeBadge = (type) => {
     const badgeMap = {
       NATIONAL: '🇧🇩 National Committee',
@@ -67,9 +57,6 @@ export const CommitteeListPage = () => {
             <Link to="/dashboard">
               <Button variant="secondary">Dashboard</Button>
             </Link>
-            <Button variant="outline" onClick={handleSeedBD}>
-              ⚡ Generate Generic 13-Tier Structure
-            </Button>
             <Button onClick={() => setIsModalOpen(true)}>
               + Create Committee
             </Button>

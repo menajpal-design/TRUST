@@ -13,26 +13,7 @@ class CommitteeService {
   }
 
   static async seedBDCommitteeHierarchy(organizationId) {
-    const existing = await Committee.countDocuments({ organization_id: organizationId });
-    if (existing > 0) return { seeded: 0, message: 'Committees already exist' };
-
-    const c1 = await Committee.create({ organization_id: organizationId, name: 'National Executive Committee', code: 'NAT-EXEC', committee_type: 'NATIONAL' });
-    const c2 = await Committee.create({ organization_id: organizationId, name: 'Division Executive Committee', code: 'DIV-EXEC', committee_type: 'DIVISION', parent_committee_id: c1._id });
-    const c3 = await Committee.create({ organization_id: organizationId, name: 'District Executive Committee', code: 'DIS-EXEC', committee_type: 'DISTRICT', parent_committee_id: c2._id });
-    const c4 = await Committee.create({ organization_id: organizationId, name: 'Upazila Executive Committee', code: 'UPZ-EXEC', committee_type: 'UPAZILA', parent_committee_id: c3._id });
-    const c5 = await Committee.create({ organization_id: organizationId, name: 'Union Executive Committee', code: 'UNI-EXEC', committee_type: 'UNION', parent_committee_id: c4._id });
-    const c6 = await Committee.create({ organization_id: organizationId, name: 'Ward Executive Committee', code: 'WRD-EXEC', committee_type: 'WARD', parent_committee_id: c5._id });
-
-    // Specialized Tier Templates
-    await Committee.create({ organization_id: organizationId, name: 'Village Unit Committee', code: 'VIL-UNIT', committee_type: 'VILLAGE', parent_committee_id: c6._id });
-    await Committee.create({ organization_id: organizationId, name: 'School Unit Committee', code: 'SCH-UNIT', committee_type: 'SCHOOL', parent_committee_id: c6._id });
-    await Committee.create({ organization_id: organizationId, name: 'College Unit Committee', code: 'COL-UNIT', committee_type: 'COLLEGE', parent_committee_id: c6._id });
-    await Committee.create({ organization_id: organizationId, name: 'Mosque Unit Committee', code: 'MSQ-UNIT', committee_type: 'MOSQUE', parent_committee_id: c6._id });
-    await Committee.create({ organization_id: organizationId, name: 'Market Unit Committee', code: 'MKT-UNIT', committee_type: 'MARKET', parent_committee_id: c6._id });
-    await Committee.create({ organization_id: organizationId, name: 'Women\'s Wing Committee', code: 'WMN-WING', committee_type: 'WOMEN', parent_committee_id: c1._id });
-    await Committee.create({ organization_id: organizationId, name: 'Youth Wing Committee', code: 'YTH-WING', committee_type: 'YOUTH', parent_committee_id: c1._id });
-
-    return { seeded: 13, message: 'Seeded 13-Tier Generic Committee Hierarchy' };
+    return { seeded: 0, message: 'Committees must be setup manually by organization admin.' };
   }
 
   static async getCommitteesByOrg(organizationId, status) {
