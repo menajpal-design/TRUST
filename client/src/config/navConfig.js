@@ -16,7 +16,7 @@ export const NAV_SECTIONS = [
   {
     title: 'Members & Directory',
     items: [
-      { id: 'members', title: 'Member Directory', path: '/members', icon: '🪪', roles: ['ALL'] },
+      { id: 'members', title: 'Member Directory', path: '/members', icon: '🪪', roles: ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'] },
       { id: 'idcard', title: 'Smart PVC ID Studio', path: '/idcard', icon: '🆔', roles: ['ALL'] },
       { id: 'blood-relief', title: 'Emergency Blood Directory', path: '/blood-relief', icon: '🩸', roles: ['ALL'] }
     ]

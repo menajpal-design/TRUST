@@ -22,6 +22,13 @@ class MemberController {
     if (!req.user || !req.user.active_organization_id) {
       return ApiResponse.error(res, 'Active organization context required. Please select or switch to an active organization.', 400);
     }
+    const isSuperAdmin = req.user.is_global_superadmin;
+    const role = String(req.user.role || 'MEMBER').toUpperCase();
+    const canManage = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'].includes(role);
+    if (!canManage) {
+      return ApiResponse.error(res, 'Only organization owners or admins can add members', 403);
+    }
+
     const result = await MemberService.addMember(
       req.user.active_organization_id,
       req.user._id,
@@ -32,6 +39,13 @@ class MemberController {
 
 
   static async update(req, res) {
+    const isSuperAdmin = req.user.is_global_superadmin;
+    const role = String(req.user.role || 'MEMBER').toUpperCase();
+    const canManage = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'].includes(role);
+    if (!canManage) {
+      return ApiResponse.error(res, 'Only organization owners or admins can update member details and roles', 403);
+    }
+
     const result = await MemberService.updateMember(
       req.user.active_organization_id,
       req.params.id,
@@ -50,6 +64,13 @@ class MemberController {
   }
 
   static async delete(req, res) {
+    const isSuperAdmin = req.user.is_global_superadmin;
+    const role = String(req.user.role || 'MEMBER').toUpperCase();
+    const canManage = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'].includes(role);
+    if (!canManage) {
+      return ApiResponse.error(res, 'Only organization owners or admins can remove member records', 403);
+    }
+
     const result = await MemberService.deleteMember(
       req.user.active_organization_id,
       req.params.id,

@@ -200,6 +200,30 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
               </div>
             </div>
 
+            {/* System Role & Permissions */}
+            <div className="space-y-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/40">
+              <h3 className="text-xs sm:text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🛡️</span> System Role & Access Authorization
+              </h3>
+              <div>
+                <Label>System Role</Label>
+                <select
+                  name="system_role"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs sm:text-sm"
+                  value={formData.system_role}
+                  onChange={handleChange}
+                >
+                  <option value="MEMBER">MEMBER (General Member - Profile & Fees Only)</option>
+                  <option value="MODERATOR">MODERATOR (Community & Notice Manager)</option>
+                  <option value="TREASURER">TREASURER (Finance & Fee Collector)</option>
+                  <option value="ADMIN">ADMIN (Full Manager Access)</option>
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Note: Updating system role grants or restricts access to management routes like Member Directory, Fees Collection & Reports.
+                </p>
+              </div>
+            </div>
+
 
             {/* Revision Reason */}
             <div>
