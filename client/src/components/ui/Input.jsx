@@ -1,16 +1,27 @@
 import React from 'react';
 
-export const Input = React.forwardRef(({ className = '', error, ...props }, ref) => {
+export const Input = React.forwardRef(({ className = '', error, label, ...props }, ref) => {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-1">
+      {label && (
+        <label className="block text-xs font-semibold text-slate-400 mb-1">{label}</label>
+      )}
       <input
         ref={ref}
-        className={`w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
-          error ? 'border-rose-500 focus:ring-rose-500' : ''
-        } ${className}`}
+        className={`w-full px-4 py-2.5 bg-slate-950 border rounded-xl text-sm text-slate-100 placeholder-slate-500
+          transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/60
+          ${error
+            ? 'border-rose-500/70 focus:ring-rose-500/80 focus:border-rose-500/60'
+            : 'border-slate-800/80 hover:border-slate-700'
+          }
+          ${className}`}
         {...props}
       />
-      {error && <p className="mt-1 text-xs text-rose-400 font-medium">{error}</p>}
+      {error && (
+        <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1">
+          <span>⚠</span> {error}
+        </p>
+      )}
     </div>
   );
 });

@@ -10,34 +10,41 @@ export const MainLayout = ({ children }) => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
-      {/* Dynamic Desktop Sidebar */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      {/* Desktop Sidebar */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
-        {/* Top Navbar */}
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+
+        {/* Sticky Navbar */}
         <Navbar
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         />
 
-        {/* Dynamic Route Breadcrumbs */}
+        {/* Breadcrumbs */}
         <Breadcrumbs />
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-          {children}
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto pb-20 md:pb-6">
+          <div className="max-w-[1400px] mx-auto w-full animate-fadein">
+            {children}
+          </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation & Drawer */}
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
 
-      {/* Command Palette Modal (Ctrl + K) */}
-      <CommandPaletteModal isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
+      {/* Command Palette Modal */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
     </div>
   );
 };

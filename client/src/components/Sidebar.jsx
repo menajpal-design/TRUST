@@ -8,84 +8,91 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
   const location = useLocation();
   const [filterText, setFilterText] = useState('');
 
-  const isSuperAdmin = user?.is_global_superadmin;
-  const userRole = activeOrganization?.role || user?.role || 'MEMBER';
-
   const navSections = generateFilteredNav(user, activeOrganization);
 
   return (
     <aside
-      className={`hidden md:flex bg-slate-900/90 border-r border-slate-800 backdrop-blur-md flex-col justify-between transition-all duration-300 z-40 ${
-        isCollapsed ? 'w-20' : 'w-64'
+      className={`hidden md:flex flex-col bg-slate-950 border-r border-slate-800/60 z-40 flex-shrink-0 sidebar-transition ${
+        isCollapsed ? 'w-[72px]' : 'w-[260px]'
       }`}
+      style={{ height: '100vh', position: 'sticky', top: 0 }}
     >
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className={`flex items-center border-b border-slate-800/60 h-16 flex-shrink-0 ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'}`}>
+        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-emerald-600/30 flex-shrink-0">
+          U
+        </div>
         {!isCollapsed && (
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md shadow-emerald-600/30">
-              U
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-slate-100 text-sm flex items-center gap-1 leading-tight">
+              UnionDesk <span>🇧🇩</span>
             </div>
-            <div className="truncate">
-              <span className="font-bold text-slate-100 text-sm flex items-center gap-1 truncate">
-                UnionDesk <span className="text-xs">🇧🇩</span>
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 block uppercase font-bold truncate">
-                {activeOrganization?.name || 'BD Workspace'}
-              </span>
+            <div className="text-[10px] font-semibold text-emerald-400 font-mono uppercase truncate leading-tight mt-0.5">
+              {activeOrganization?.name || 'BD Workspace'}
             </div>
           </div>
         )}
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-xs font-bold"
+          className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-all text-xs flex-shrink-0"
+          title={isCollapsed ? 'Expand' : 'Collapse'}
         >
-          {isCollapsed ? '➔' : '⬅'}
+          {isCollapsed ? '›' : '‹'}
         </button>
       </div>
 
-      {/* Menu Filter Search (if expanded) */}
+      {/* Search Filter */}
       {!isCollapsed && (
-        <div className="px-3 pt-3">
-          <input
-            type="text"
-            placeholder="🔍 Filter UnionDesk menu..."
-            className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
+        <div className="px-3 py-3 flex-shrink-0">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">🔍</span>
+            <input
+              type="text"
+              placeholder="Filter modules..."
+              className="w-full pl-7 pr-3 py-2 bg-slate-900/80 border border-slate-800/60 rounded-xl text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 transition-all"
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+            />
+          </div>
         </div>
       )}
 
-      {/* Grouped Section Menu Items */}
-      <nav className="p-3 space-y-4 overflow-y-auto flex-1">
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-4">
         {navSections.map((section, idx) => {
-          const matchingItems = section.items.filter((item) =>
+          const matchingItems = section.items.filter(item =>
             item.title.toLowerCase().includes(filterText.toLowerCase())
           );
           if (matchingItems.length === 0) return null;
 
           return (
-            <div key={idx} className="space-y-1">
+            <div key={idx} className="space-y-0.5">
               {!isCollapsed && (
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-1">
+                <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest px-3 py-1">
                   {section.title}
-                </h4>
+                </p>
               )}
               {matchingItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname === item.path ||
+                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
                 return (
                   <NavLink
                     key={item.id}
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-xl font-semibold text-xs transition-all ${
+                    title={isCollapsed ? item.title : undefined}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 group ${
                       isActive
-                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                    }`}
+                        ? 'bg-indigo-600/90 text-white shadow-lg shadow-indigo-600/20'
+                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                    } ${isCollapsed ? 'justify-center' : ''}`}
                   >
-                    <span className="text-base">{item.icon}</span>
+                    <span className={`text-sm flex-shrink-0 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`}>
+                      {item.icon}
+                    </span>
                     {!isCollapsed && <span className="truncate">{item.title}</span>}
+                    {!isCollapsed && isActive && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0" />
+                    )}
                   </NavLink>
                 );
               })}
@@ -94,16 +101,20 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
         })}
       </nav>
 
-      {/* User Footer Profile Card */}
+      {/* User Profile Footer */}
       {!isCollapsed && (
-        <div className="p-3 border-t border-slate-800 bg-slate-950/40">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-emerald-400">
-              {user?.first_name ? user.first_name[0] : 'U'}
+        <div className="border-t border-slate-800/60 p-3 flex-shrink-0">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-900 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-500/40 flex items-center justify-center font-bold text-xs text-white flex-shrink-0 shadow-md">
+              {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
             </div>
-            <div className="truncate text-xs">
-              <div className="font-bold text-slate-200 truncate">{user?.first_name} {user?.last_name}</div>
-              <div className="text-[10px] text-slate-500 truncate">{user?.email}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold text-slate-200 truncate">
+                {user?.first_name} {user?.last_name}
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono truncate">
+                {activeOrganization?.role || 'MEMBER'}
+              </div>
             </div>
           </div>
         </div>
