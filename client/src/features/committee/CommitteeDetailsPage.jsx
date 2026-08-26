@@ -84,6 +84,9 @@ export const CommitteeDetailsPage = () => {
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">
                 {committee.code || 'MAIN'}
               </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-purple-950 text-purple-300 border border-purple-800">
+                🛡️ Tier Type: {committee.committee_type || 'EXECUTIVE'}
+              </span>
               <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
                 committee.status === 'ACTIVE' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
               }`}>
@@ -108,6 +111,16 @@ export const CommitteeDetailsPage = () => {
             <Button onClick={() => setIsAssignOpen(true)}>
               + Assign Member
             </Button>
+          </div>
+        </div>
+
+        {/* Hierarchy Governance Alert */}
+        <div className="bg-indigo-950/40 border border-indigo-500/30 p-4 rounded-xl text-xs text-indigo-300 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>🛡️</span>
+            <span>
+              <strong>Hierarchy Governance Enforced:</strong> Higher tier/parent committee leaders can manage and assign positions to lower tier committees. Subordinate committees cannot alter superior committee leadership.
+            </span>
           </div>
         </div>
 

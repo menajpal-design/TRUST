@@ -103,7 +103,29 @@ class CommitteeService {
     return { message: 'Committee deleted successfully' };
   }
 
-  static async addMemberToCommittee(organizationId, committeeId, data) {
+  static getHierarchyRank(type) {
+    const rankMap = {
+      NATIONAL: 1,
+      CENTRAL: 1,
+      EXECUTIVE: 1,
+      DIVISION: 2,
+      DISTRICT: 3,
+      UPAZILA: 4,
+      UNION: 5,
+      WARD: 6,
+      VILLAGE: 7,
+      SCHOOL: 7,
+      COLLEGE: 7,
+      MOSQUE: 7,
+      MARKET: 7,
+      WOMEN: 7,
+      YOUTH: 7,
+      SUB: 7
+    };
+    return rankMap[type] || 7;
+  }
+
+  static async addMemberToCommittee(organizationId, committeeId, data, requestingUser = null) {
     const committee = await Committee.findOne({
       _id: committeeId,
       organization_id: organizationId,
@@ -114,6 +136,33 @@ class CommitteeService {
       const error = new Error('Committee not found');
       error.statusCode = 404;
       throw error;
+    }
+
+    // Hierarchy Tier Check: Lower committee cannot assign members to superior committee
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        // Find requesting user's highest active committee membership
+        const userCommittees = await CommitteeMember.find({ user_id: requestingUser._id, status: 'ACTIVE' }).populate('committee_id');
+        let userBestRank = 99;
+        userCommittees.forEach(cm => {
+          if (cm.committee_id) {
+            const rank = CommitteeService.getHierarchyRank(cm.committee_id.committee_type);
+            if (rank < userBestRank) userBestRank = rank;
+          }
+        });
+
+        const targetRank = CommitteeService.getHierarchyRank(committee.committee_type);
+
+        // Lower committee (higher rank number) cannot manage superior committee (lower rank number)
+        if (userBestRank > targetRank) {
+          const error = new Error('Access Denied: Lower tier committee leaders cannot assign members to superior/parent committees.');
+          error.statusCode = 403;
+          throw error;
+        }
+      }
     }
 
     const existing = await CommitteeMember.findOne({
@@ -131,16 +180,16 @@ class CommitteeService {
     const committeeMember = await CommitteeMember.create({
       committee_id: committeeId,
       user_id: data.user_id,
-      position: data.position,
+      position: data.position || data.position_title,
       position_order: data.position_order || 99,
-      joined_date: data.joined_date ? new Date(data.joined_date) : new Date(),
+      joined_date: data.joined_date || data.start_date ? new Date(data.joined_date || data.start_date) : new Date(),
       status: 'ACTIVE'
     });
 
     return committeeMember;
   }
 
-  static async removeMemberFromCommittee(organizationId, committeeId, memberId) {
+  static async removeMemberFromCommittee(organizationId, committeeId, memberId, requestingUser = null) {
     const committeeMember = await CommitteeMember.findOne({
       _id: memberId,
       committee_id: committeeId
@@ -150,6 +199,31 @@ class CommitteeService {
       const error = new Error('Committee member record not found');
       error.statusCode = 404;
       throw error;
+    }
+
+    // Hierarchy Tier Check
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        const committee = await Committee.findById(committeeId);
+        const userCommittees = await CommitteeMember.find({ user_id: requestingUser._id, status: 'ACTIVE' }).populate('committee_id');
+        let userBestRank = 99;
+        userCommittees.forEach(cm => {
+          if (cm.committee_id) {
+            const rank = CommitteeService.getHierarchyRank(cm.committee_id.committee_type);
+            if (rank < userBestRank) userBestRank = rank;
+          }
+        });
+
+        const targetRank = committee ? CommitteeService.getHierarchyRank(committee.committee_type) : 1;
+        if (userBestRank > targetRank) {
+          const error = new Error('Access Denied: Lower tier committee leaders cannot remove members from superior committees.');
+          error.statusCode = 403;
+          throw error;
+        }
+      }
     }
 
     committeeMember.status = 'REMOVED';

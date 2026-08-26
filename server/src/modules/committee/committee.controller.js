@@ -52,7 +52,8 @@ class CommitteeController {
     const result = await CommitteeService.addMemberToCommittee(
       req.user.active_organization_id,
       req.params.id,
-      req.body
+      req.body,
+      req.user
     );
     return ApiResponse.success(res, 'Member assigned to committee', result, 201);
   }
@@ -61,7 +62,8 @@ class CommitteeController {
     const result = await CommitteeService.removeMemberFromCommittee(
       req.user.active_organization_id,
       req.params.id,
-      req.params.memberId
+      req.params.memberId,
+      req.user
     );
     return ApiResponse.success(res, result.message, null, 200);
   }
