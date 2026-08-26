@@ -9,7 +9,6 @@ export const Navbar = ({ onOpenCommandPalette, onToggleMobileMenu }) => {
   const navigate = useNavigate();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   const handleLogout = async () => {
@@ -97,51 +96,6 @@ export const Navbar = ({ onOpenCommandPalette, onToggleMobileMenu }) => {
 
       {/* Right Action Icons & Profile Dropdown */}
       <div className="flex items-center gap-3">
-        {/* Quick Create Dropdown */}
-        <div className="relative">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setIsQuickCreateOpen(!isQuickCreateOpen)}
-            className="text-xs font-bold"
-          >
-            + Quick Action
-          </Button>
-
-          {isQuickCreateOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-2 z-50 text-xs">
-              <Link
-                to="/donations"
-                className="block px-4 py-2 hover:bg-slate-800 text-slate-200"
-                onClick={() => setIsQuickCreateOpen(false)}
-              >
-                💰 Record Donation
-              </Link>
-              <Link
-                to="/events"
-                className="block px-4 py-2 hover:bg-slate-800 text-slate-200"
-                onClick={() => setIsQuickCreateOpen(false)}
-              >
-                🎟️ Schedule Event
-              </Link>
-              <Link
-                to="/members"
-                className="block px-4 py-2 hover:bg-slate-800 text-slate-200"
-                onClick={() => setIsQuickCreateOpen(false)}
-              >
-                🪪 Add New Member
-              </Link>
-              <Link
-                to="/finance"
-                className="block px-4 py-2 hover:bg-slate-800 text-slate-200"
-                onClick={() => setIsQuickCreateOpen(false)}
-              >
-                💼 Income / Expense Entry
-              </Link>
-            </div>
-          )}
-        </div>
-
         {/* Fullscreen Button */}
         <button
           onClick={toggleFullscreen}
