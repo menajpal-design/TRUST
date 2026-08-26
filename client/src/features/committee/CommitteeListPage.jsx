@@ -68,7 +68,7 @@ export const CommitteeListPage = () => {
               <Button variant="secondary">Dashboard</Button>
             </Link>
             <Button variant="outline" onClick={handleSeedBD}>
-              🇧🇩 Seed BD 13-Tier Hierarchy
+              ⚡ Generate Generic 13-Tier Structure
             </Button>
             <Button onClick={() => setIsModalOpen(true)}>
               + Create Committee
@@ -101,7 +101,7 @@ export const CommitteeListPage = () => {
           </div>
         ) : committees.length === 0 ? (
           <Card className="text-center py-12">
-            <p className="text-slate-400 text-sm">No committees found. Click "🇧🇩 Seed BD 13-Tier Hierarchy" or "+ Create Committee".</p>
+            <p className="text-slate-400 text-sm">No committees found. Click "+ Create Committee" to define your organization hierarchy.</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

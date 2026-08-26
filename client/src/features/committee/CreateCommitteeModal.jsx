@@ -23,9 +23,9 @@ export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
     status: 'ACTIVE',
     description: '',
     geo_location: {
-      division: 'Dhaka',
-      district: 'Dhaka',
-      upazila: 'Savar',
+      division: '',
+      district: '',
+      upazila: '',
       municipality_city_corp: '',
       union_name: '',
       ward_no: '',
