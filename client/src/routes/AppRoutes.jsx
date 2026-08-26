@@ -28,6 +28,7 @@ import { MeetingVotingPage } from '../features/meeting/MeetingVotingPage';
 import { MemberIDCardPage } from '../features/idcard/MemberIDCardPage';
 import { BloodReliefDirectoryPage } from '../features/directory/BloodReliefDirectoryPage';
 import { MemberProfilePage } from '../features/member/MemberProfilePage';
+import { DocumentVaultPage } from '../features/document/DocumentVaultPage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
