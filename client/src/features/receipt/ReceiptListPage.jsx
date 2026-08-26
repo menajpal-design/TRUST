@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchReceipts } from '../../services/receipt.service';
+import useAuthStore from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +9,11 @@ import { CreateReceiptModal } from './CreateReceiptModal';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 export const ReceiptListPage = () => {
+  const { user, activeOrganization } = useAuthStore();
+  const isSuperAdmin = user?.is_global_superadmin;
+  const userRole = String(activeOrganization?.role || activeOrganization?.user_role || user?.role || 'MEMBER').toUpperCase();
+  const canManageReceipts = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'].includes(userRole);
+
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,7 +24,7 @@ export const ReceiptListPage = () => {
     setLoading(true);
     try {
       const res = await fetchReceipts(search);
-      setReceipts(res.data);
+      setReceipts(res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -29,25 +36,78 @@ export const ReceiptListPage = () => {
     loadReceipts();
   }, [search]);
 
+  // If member, filter personal receipts
+  const displayReceipts = canManageReceipts
+    ? receipts
+    : receipts.filter(r => {
+        const userName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim().toLowerCase();
+        const pName = (r.payer_name || '').toLowerCase();
+        return pName.includes(userName) || userName.includes(pName);
+      });
+
+  const totalReceiptsAmount = displayReceipts.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">UnionDesk 🇧🇩 Official Payment Receipts</h1>
-            <p className="text-slate-400 mt-1">Issue, print, and verify digital QR receipts for member fees and donations</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                {canManageReceipts ? `👑 Role: ${userRole} (Receipt Manager)` : '👤 Member Personal Receipts'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">
+              {canManageReceipts ? 'UnionDesk 🇧🇩 Official Payment Receipts' : '🧾 আমার পেমেন্ট ও ফির রসিদ হিসাব (My Receipts)'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {canManageReceipts
+                ? 'Issue, print, and verify digital QR receipts for member fees and donations'
+                : 'আপনার পরিশোধিত সকল ফি ও অনুদানের ডিজিটাল কিউআর রসিদ তালিকা ও প্রিন্ট কপি'}
+            </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            + Issue New Receipt
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/dashboard">
+              <Button variant="secondary" size="sm">Dashboard</Button>
+            </Link>
+            {canManageReceipts ? (
+              <Button size="sm" onClick={() => setIsModalOpen(true)}>
+                + Issue New Receipt
+              </Button>
+            ) : (
+              <Link to="/fees">
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                  💳 ফি জমা দিন (Pay Due)
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
+
+        {/* Member Personal Receipt Summary */}
+        {!canManageReceipts && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="!p-4 bg-emerald-950/40 border-emerald-500/40">
+              <span className="text-xs font-bold text-emerald-400 uppercase">মোট রসিদকৃত অর্থ (Total Paid)</span>
+              <p className="text-2xl font-bold text-emerald-400 font-mono mt-1">{formatCurrency(totalReceiptsAmount)}</p>
+            </Card>
+            <Card className="!p-4 bg-indigo-950/40 border-indigo-500/40">
+              <span className="text-xs font-bold text-indigo-400 uppercase">মোট ডিজিটাল রসিদ সংখ্যা</span>
+              <p className="text-2xl font-bold text-indigo-300 font-mono mt-1">{displayReceipts.length} টি</p>
+            </Card>
+            <Card className="!p-4 bg-slate-900 border-slate-800">
+              <span className="text-xs font-bold text-slate-400 uppercase">ভেরিফিকেশন স্ট্যাটাস</span>
+              <p className="text-sm font-bold text-emerald-400 mt-2">🔒 100% QR ভেরিফায়েড রসিদ</p>
+            </Card>
+          </div>
+        )}
 
         {/* Filter Bar */}
         <Card className="!p-4">
           <div className="max-w-md">
             <Input
               type="text"
-              placeholder="Search by receipt # or payer name..."
+              placeholder={canManageReceipts ? "Search by receipt # or payer name..." : "রসিদ নম্বর বা বিবরণ দিয়ে খুঁজুন..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -60,8 +120,10 @@ export const ReceiptListPage = () => {
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
             </div>
-          ) : receipts.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-sm">No receipts found. Click "+ Issue New Receipt".</div>
+          ) : displayReceipts.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 text-sm">
+              {canManageReceipts ? 'No receipts found. Click "+ Issue New Receipt".' : 'আপনার নামে কোনো পেমেন্ট রসিদ পাওয়া যায়নি।'}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-300">
@@ -77,7 +139,7 @@ export const ReceiptListPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {receipts.map((r) => (
+                  {displayReceipts.map((r) => (
                     <tr key={r._id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="px-4 py-3.5 font-mono text-xs font-bold text-indigo-400">
                         {r.receipt_no}

@@ -5,7 +5,11 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
 export const MemberIDCardPage = () => {
-  const { activeOrganization } = useAuthStore();
+  const { user: currentUser, activeOrganization } = useAuthStore();
+  const isSuperAdmin = currentUser?.is_global_superadmin;
+  const userRole = String(activeOrganization?.role || activeOrganization?.user_role || currentUser?.role || 'MEMBER').toUpperCase();
+  const canManageIDCards = isSuperAdmin || ['ORG_OWNER', 'OWNER', 'ADMIN', 'TREASURER', 'MODERATOR'].includes(userRole);
+
   const [members, setMembers] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,10 +17,17 @@ export const MemberIDCardPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetchMembers();
-        const docs = res.data.docs || [];
+        const res = await fetchMembers({ limit: 100 });
+        const docs = res.data?.docs || res.data || [];
         setMembers(docs);
-        if (docs.length > 0) setSelectedMember(docs[0]);
+        
+        // Find current member or default to first
+        const myMem = docs.find(m => {
+          const u = m.user_id;
+          return u && (u._id === currentUser?._id || u === currentUser?._id || u.email === currentUser?.email);
+        }) || (docs.length > 0 ? docs[0] : null);
+
+        setSelectedMember(myMem);
       } catch (e) {
         console.error(e);
       } finally {
@@ -24,45 +35,56 @@ export const MemberIDCardPage = () => {
       }
     };
     load();
-  }, []);
+  }, [currentUser?._id]);
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8 print:p-0">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 print:p-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
           <div>
-            <h1 className="text-3xl font-bold">🆔 Smart PVC Member ID Card Studio</h1>
-            <p className="text-slate-400 mt-1">Generate printable CR80 standard smart ID cards with QR codes & member info</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                {canManageIDCards ? `👑 Role: ${userRole} (ID Studio)` : '👤 Member Smart PVC Card'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">🆔 স্মার্ট পিভিসি মেম্বার আইডি কার্ড</h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              {canManageIDCards 
+                ? 'Generate printable CR80 standard smart ID cards with QR codes & member info'
+                : 'আপনার অফিশিয়াল আন্তর্জাতিক মানের ডিজিটাল কিউআর কোড সম্বলিত স্মার্ট পিভিসি কার্ড'}
+            </p>
           </div>
-          <Button onClick={handlePrint}>
+          <Button onClick={handlePrint} className="bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
             🖨️ Print PVC ID Card
           </Button>
         </div>
 
-        {/* Member Selector */}
-        <Card className="!p-4 print:hidden">
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Select Member:</span>
-            <select
-              className="bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-lg px-3 py-2 flex-1"
-              value={selectedMember?._id || ''}
-              onChange={(e) => {
-                const target = members.find(m => m._id === e.target.value);
-                if (target) setSelectedMember(target);
-              }}
-            >
-              {members.map(m => (
-                <option key={m._id} value={m._id}>
-                  {m.user_id?.first_name} {m.user_id?.last_name} ({m.member_code}) — {m.position_title}
-                </option>
-              ))}
-            </select>
-          </div>
-        </Card>
+        {/* Member Selector (Only for Managers) */}
+        {canManageIDCards && (
+          <Card className="!p-4 print:hidden">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-semibold text-slate-400 uppercase">Select Member:</span>
+              <select
+                className="bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-lg px-3 py-2 flex-1"
+                value={selectedMember?._id || ''}
+                onChange={(e) => {
+                  const target = members.find(m => m._id === e.target.value);
+                  if (target) setSelectedMember(target);
+                }}
+              >
+                {members.map(m => (
+                  <option key={m._id} value={m._id}>
+                    {m.user_id?.first_name} {m.user_id?.last_name} ({m.member_code}) — {m.position_title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Card>
+        )}
 
         {/* Printable PVC ID Card Container */}
         {loading ? (

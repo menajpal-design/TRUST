@@ -126,9 +126,28 @@ export const FeeManagementPage = () => {
             <Link to="/dashboard">
               <Button variant="secondary" size="sm">Dashboard</Button>
             </Link>
-            {canManageFees && (
+            {canManageFees ? (
               <Button variant="outline" size="sm" onClick={handleGenerate} isLoading={generating}>
                 ⚡ Generate Monthly Dues
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                onClick={() => {
+                  const unpaidDue = displayDues.find(d => d.status !== 'PAID') || displayDues[0];
+                  if (unpaidDue) {
+                    const remaining = Math.max(0, unpaidDue.due_amount + unpaidDue.late_fee - unpaidDue.paid_amount);
+                    setSelectedDue(unpaidDue);
+                    setCollectAmount(remaining > 0 ? remaining.toString() : '200');
+                  } else {
+                    alert('আপনার বর্তমানে কোনো বকেয়া নেই!');
+                  }
+                  setSuccessReceipt(null);
+                  setModalError(null);
+                }}
+              >
+                💳 টাকা জমা দিন (Pay My Due)
               </Button>
             )}
           </div>
@@ -236,7 +255,7 @@ export const FeeManagementPage = () => {
                     <th className="px-4 py-3">Payment Date</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Receipt No</th>
-                    {canManageFees && <th className="px-4 py-3 text-right">Actions</th>}
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -270,23 +289,29 @@ export const FeeManagementPage = () => {
                         <td className="px-4 py-3.5 text-xs font-mono text-indigo-300">
                           {d.receipt_id ? `#${d.receipt_id.receipt_no || d.receipt_id.receipt_number}` : 'None'}
                         </td>
-                        {canManageFees && (
-                          <td className="px-4 py-3.5 text-right">
-                            {d.status !== 'PAID' && (
-                              <button
-                                onClick={() => {
-                                  setSelectedDue(d);
-                                  setCollectAmount(remaining.toString());
-                                  setSuccessReceipt(null);
-                                  setModalError(null);
-                                }}
-                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors"
-                              >
-                                Collect Fee
-                              </button>
-                            )}
-                          </td>
-                        )}
+                        <td className="px-4 py-3.5 text-right">
+                          {d.status !== 'PAID' ? (
+                            <button
+                              onClick={() => {
+                                setSelectedDue(d);
+                                setCollectAmount(remaining.toString());
+                                setSuccessReceipt(null);
+                                setModalError(null);
+                              }}
+                              className={`px-3 py-1 text-white rounded text-xs font-bold transition-colors ${
+                                canManageFees ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md'
+                              }`}
+                            >
+                              {canManageFees ? 'Collect Fee' : '💳 জমা দিন (Pay)'}
+                            </button>
+                          ) : (
+                            <Link to="/receipts">
+                              <span className="text-xs text-indigo-400 hover:underline font-bold">
+                                🧾 রসিদ
+                              </span>
+                            </Link>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -296,15 +321,17 @@ export const FeeManagementPage = () => {
           )}
         </Card>
 
-        {/* Collection Modal (Only rendered for Authorized Manager/Collector Roles) */}
-        {canManageFees && selectedDue && (
+        {/* Collection & Member Payment Modal */}
+        {selectedDue && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
             <div className="w-full max-w-md my-8">
               <Card>
                 <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-100">Collect Fee Payment</h3>
-                    <p className="text-xs text-indigo-400 font-mono">Member: {selectedDue.member_id?.member_code}</p>
+                    <h3 className="text-lg font-bold text-slate-100">
+                      {canManageFees ? 'Collect Fee Payment' : '💳 মেম্বারশিপ ফি জমা দিন'}
+                    </h3>
+                    <p className="text-xs text-indigo-400 font-mono">Member: {selectedDue.member_id?.member_code || 'MEM-0001'}</p>
                   </div>
                   <button onClick={() => setSelectedDue(null)} className="text-slate-400 hover:text-slate-200 text-lg font-bold">
                     ✕
@@ -315,67 +342,91 @@ export const FeeManagementPage = () => {
 
                 {successReceipt ? (
                   <div className="space-y-4 text-center py-4">
-                    <div className="text-3xl">🎉</div>
-                    <h4 className="text-base font-bold text-emerald-400">Payment Collected Successfully!</h4>
-                    <p className="text-xs text-slate-300">Receipt #{successReceipt.receipt_no || successReceipt.receipt_number} issued with digital QR code.</p>
+                    <div className="text-4xl animate-bounce">🎉</div>
+                    <h4 className="text-base font-bold text-emerald-400">ফি পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!</h4>
+                    <p className="text-xs text-slate-300">ডিজিটাল কিউআর কোডসহ রসিদ #{successReceipt.receipt_no || successReceipt.receipt_number} প্রস্তুত।</p>
 
                     {(successReceipt.qr_code_data || successReceipt.qr_code_url) && (
-                      <div className="w-24 h-24 mx-auto bg-white p-1 rounded-lg">
+                      <div className="w-28 h-28 mx-auto bg-white p-2 rounded-xl shadow-lg">
                         <img src={successReceipt.qr_code_data || successReceipt.qr_code_url} alt="Receipt QR" className="w-full h-full object-contain" />
                       </div>
                     )}
 
-                    <Button onClick={() => setSelectedDue(null)} className="w-full">
-                      Close Window
-                    </Button>
+                    <div className="flex gap-2 pt-2">
+                      <Link to="/receipts" className="flex-1">
+                        <Button className="w-full bg-indigo-600 hover:bg-indigo-500 font-bold text-xs">
+                          🧾 আমার রসিদ দেখুন
+                        </Button>
+                      </Link>
+                      <Button variant="secondary" onClick={() => setSelectedDue(null)} className="flex-1 text-xs">
+                        উইন্ডো বন্ধ করুন
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <form onSubmit={handleCollectSubmit} className="space-y-4">
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1.5">
                       <div className="flex justify-between text-slate-300">
-                        <span>Period Due:</span>
-                        <strong className="text-white">{selectedDue.period}</strong>
+                        <span>ফি পিরিয়ড (মাস):</span>
+                        <strong className="text-white font-mono">{selectedDue.period}</strong>
                       </div>
                       <div className="flex justify-between text-slate-300">
-                        <span>Base Due:</span>
-                        <strong className="text-white">{formatCurrency(selectedDue.due_amount)}</strong>
+                        <span>নির্ধারিত ফি:</span>
+                        <strong className="text-white font-mono">{formatCurrency(selectedDue.due_amount)}</strong>
                       </div>
-                      <div className="flex justify-between text-slate-300">
-                        <span>Late Fee:</span>
-                        <strong className="text-rose-400">{formatCurrency(selectedDue.late_fee)}</strong>
+                      {selectedDue.late_fee > 0 && (
+                        <div className="flex justify-between text-slate-300">
+                          <span>বিলম্ব ফি:</span>
+                          <strong className="text-rose-400 font-mono">{formatCurrency(selectedDue.late_fee)}</strong>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-slate-300 border-t border-slate-800 pt-1.5 font-bold">
+                        <span>অবশিষ্ট বকেয়া:</span>
+                        <strong className="text-emerald-400 font-mono">
+                          {formatCurrency(Math.max(0, selectedDue.due_amount + selectedDue.late_fee - selectedDue.paid_amount))}
+                        </strong>
                       </div>
                     </div>
 
                     <div>
-                      <Label>Collection Amount</Label>
+                      <Label>জমা দেওয়ার পরিমাণ (টাকা)</Label>
                       <Input
                         type="number"
                         value={collectAmount}
                         onChange={(e) => setCollectAmount(e.target.value)}
                         required
+                        min="1"
                       />
                     </div>
 
                     <div>
-                      <Label>Payment Channel</Label>
+                      <Label>পেমেন্ট মাধ্যম (Payment Method)</Label>
                       <select
                         className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
-                        <option value="CASH">Cash</option>
-                        <option value="BKASH">bKash</option>
-                        <option value="NAGAD">Nagad</option>
-                        <option value="BANK">Bank Transfer</option>
+                        <option value="BKASH">bKash (বিকাশ)</option>
+                        <option value="NAGAD">Nagad (নগদ)</option>
+                        <option value="ROCKET">Rocket (রকেট)</option>
+                        <option value="BANK">Bank Transfer (ব্যাংক ট্রান্সফার)</option>
+                        <option value="CASH">Cash Deposit (নগদ ক্যাশ)</option>
                       </select>
                     </div>
 
+                    {!canManageFees && (
+                      <div className="p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-[11px] text-indigo-300 space-y-1">
+                        <span className="font-bold block">💡 পেমেন্ট নির্দেশনা:</span>
+                        <p>পেমেন্ট সম্পন্ন করার পর তাৎক্ষণিকভাবে আপনার নামে ভেরিফায়েড ডিজিটাল কিউআর রসিদ ইস্যু হবে।</p>
+                      </div>
+                    )}
+
                     <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                       <Button type="button" variant="secondary" onClick={() => setSelectedDue(null)}>
-                        Cancel
+                        বাতিল করুন
                       </Button>
-                      <Button type="submit" isLoading={collecting}>
-                        Confirm Payment & Issue Receipt
+                      <Button type="submit" isLoading={collecting} className="bg-emerald-600 hover:bg-emerald-500">
+                        {canManageFees ? 'Confirm Payment & Issue Receipt' : 'পেমেন্ট নিশ্চিত করুন'}
                       </Button>
                     </div>
                   </form>

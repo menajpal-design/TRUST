@@ -27,7 +27,7 @@ import { NoticeBoardPage } from '../features/notice/NoticeBoardPage';
 import { MeetingVotingPage } from '../features/meeting/MeetingVotingPage';
 import { MemberIDCardPage } from '../features/idcard/MemberIDCardPage';
 import { BloodReliefDirectoryPage } from '../features/directory/BloodReliefDirectoryPage';
-import { DocumentVaultPage } from '../features/document/DocumentVaultPage';
+import { MemberProfilePage } from '../features/member/MemberProfilePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -45,6 +45,7 @@ export const AppRoutes = () => {
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardOverviewPage />} />
+        <Route path="/profile" element={<MemberProfilePage />} />
         <Route path="/settings" element={<OrganizationSettingsPage />} />
         <Route path="/organizations" element={<OrganizationListPage />} />
         <Route path="/organizations/settings" element={<OrganizationSettingsPage />} />
