@@ -104,19 +104,28 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
       {/* User Profile Footer */}
       {!isCollapsed && (
         <div className="border-t border-slate-800/60 p-3 flex-shrink-0">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-900 transition-colors">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-indigo-950/80 border border-indigo-500/50 shadow-lg shadow-indigo-950/40 text-slate-100'
+                  : 'hover:bg-slate-900/80 text-slate-300'
+              }`
+            }
+          >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-500/40 flex items-center justify-center font-bold text-xs text-white flex-shrink-0 shadow-md">
               {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-slate-200 truncate">
-                {user?.first_name} {user?.last_name}
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-xs font-bold text-slate-200 truncate flex items-center gap-1.5">
+                <span>{user?.first_name} {user?.last_name}</span>
               </div>
-              <div className="text-[10px] text-slate-500 font-mono truncate">
-                {activeOrganization?.role || 'MEMBER'}
+              <div className="text-[10px] text-emerald-400 font-mono truncate">
+                👤 আমার প্রোফাইল
               </div>
             </div>
-          </div>
+          </NavLink>
         </div>
       )}
     </aside>

@@ -145,18 +145,48 @@ export const Navbar = ({ onOpenCommandPalette, onToggleMobileMenu }) => {
                 {/* Menu Items */}
                 <div className="py-1">
                   <Link
-                    to="/settings"
-                    className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
+                    to="/profile"
+                    className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-100 hover:bg-slate-800/80 hover:text-emerald-400 transition-colors"
                     onClick={() => setIsProfileMenuOpen(false)}
                   >
-                    <span>⚙️</span>
-                    <span>Organization Settings</span>
+                    <span>👤</span>
+                    <span>আমার প্রোফাইল (My Profile)</span>
                   </Link>
+
+                  <Link
+                    to="/idcard"
+                    className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                  >
+                    <span>🆔</span>
+                    <span>স্মার্ট PVC কার্ড</span>
+                  </Link>
+
+                  <Link
+                    to="/fees"
+                    className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800/60 hover:text-slate-100 transition-colors"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                  >
+                    <span>💳</span>
+                    <span>আমার ফি ও হিসাব</span>
+                  </Link>
+
+                  {/* Settings ONLY for owners/admins */}
+                  {(user?.is_global_superadmin || ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(String(activeOrganization?.role || activeOrganization?.user_role || '').toUpperCase())) && (
+                    <Link
+                      to="/settings"
+                      className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-colors border-t border-slate-800/40 mt-1 pt-2"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      <span>⚙️</span>
+                      <span>Organization Settings</span>
+                    </Link>
+                  )}
 
                   {user?.is_global_superadmin && (
                     <Link
                       to="/superadmin"
-                      className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-purple-400 hover:bg-purple-950/40 hover:text-purple-300 transition-colors"
+                      className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-purple-400 hover:bg-purple-950/40 hover:text-purple-300 transition-colors"
                       onClick={() => setIsProfileMenuOpen(false)}
                     >
                       <span>👑</span>
