@@ -67,7 +67,7 @@ export const OrganizationSettingsPage = () => {
       auto_backup_schedule: 'DAILY',
       enable_ai_copilot: true,
       ai_auto_summary: true,
-      api_key: 'sk_live_uniondesk_2026_x89f2k',
+      api_key: '',
       webhook_url: '',
       maintenance_mode: false,
       debug_mode: false,

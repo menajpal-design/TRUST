@@ -146,9 +146,9 @@ export const LocationManagementPage = () => {
                     <td className="px-4 py-3.5 font-bold text-slate-100">{selectedDivision}</td>
                     <td className="px-4 py-3.5 text-indigo-400 font-semibold">{selectedDistrict}</td>
                     <td className="px-4 py-3.5 font-bold text-emerald-400">{u}</td>
-                    <td className="px-4 py-3.5 text-slate-300">Sample Union</td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-slate-400">Ward 01</td>
-                    <td className="px-4 py-3.5 text-slate-400">Sample Village</td>
+                    <td className="px-4 py-3.5 text-slate-300">-</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-slate-400">-</td>
+                    <td className="px-4 py-3.5 text-slate-400">-</td>
                   </tr>
                 ))}
               </tbody>

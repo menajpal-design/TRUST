@@ -1,17 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
-import { logoutUser, switchOrganization } from '../../services/auth.service';
+import { fetchMembers } from '../../services/member.service';
+import { fetchFeeReports } from '../../services/fee.service';
+import { fetchCommittees } from '../../services/committee.service';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CommandPaletteModal } from '../../components/ui/CommandPaletteModal';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export const DashboardOverviewPage = () => {
-  const { user, activeOrganization, organizations, setAuth, logout } = useAuthStore();
+  const { user, activeOrganization, organizations } = useAuthStore();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  const [stats, setStats] = useState({
+    memberCount: 0,
+    totalCollected: 0,
+    committeeCount: 0,
+    loading: true
+  });
 
   const isSuperAdmin = user?.is_global_superadmin;
   const userRole = activeOrganization?.role || user?.role || 'MEMBER';
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const [memRes, feeRes, comRes] = await Promise.allSettled([
+          fetchMembers(),
+          fetchFeeReports(),
+          fetchCommittees()
+        ]);
+
+        const memberCount = memRes.status === 'fulfilled' ? (memRes.value.data?.meta?.totalDocs || memRes.value.data?.docs?.length || 0) : 0;
+        const totalCollected = feeRes.status === 'fulfilled' ? (feeRes.value.data?.total_collected || 0) : 0;
+        const committeeCount = comRes.status === 'fulfilled' ? (comRes.value.data?.length || 0) : 0;
+
+        if (isMounted) {
+          setStats({
+            memberCount,
+            totalCollected,
+            committeeCount,
+            loading: false
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load dashboard stats', e);
+        if (isMounted) setStats(s => ({ ...s, loading: false }));
+      }
+    };
+
+    loadStats();
+    return () => { isMounted = false; };
+  }, [activeOrganization?._id]);
 
   return (
     <div className="space-y-8">
@@ -42,24 +84,28 @@ export const DashboardOverviewPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
+      {/* Primary Dynamic KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="!p-5 border-l-4 border-indigo-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400 uppercase">Total Members</span>
             <span className="text-lg">🪪</span>
           </div>
-          <p className="text-3xl font-bold text-slate-100 font-mono mt-2">1,248</p>
-          <p className="text-[11px] text-emerald-400 mt-1">▲ +12% from last month</p>
+          <p className="text-3xl font-bold text-slate-100 font-mono mt-2">
+            {stats.loading ? '...' : stats.memberCount}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">Registered in workspace</p>
         </Card>
 
         <Card className="!p-5 border-l-4 border-emerald-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase">Monthly Dues Collected</span>
+            <span className="text-xs font-bold text-slate-400 uppercase">Total Dues Collected</span>
             <span className="text-lg">💰</span>
           </div>
-          <p className="text-3xl font-bold text-emerald-400 font-mono mt-2">$24,500</p>
-          <p className="text-[11px] text-slate-400 mt-1">Target: $30,000 USD</p>
+          <p className="text-3xl font-bold text-emerald-400 font-mono mt-2">
+            {stats.loading ? '...' : formatCurrency(stats.totalCollected)}
+          </p>
+          <p className="text-[11px] text-emerald-400 mt-1">Verified cashbook ledger</p>
         </Card>
 
         <Card className="!p-5 border-l-4 border-purple-500">
@@ -67,17 +113,19 @@ export const DashboardOverviewPage = () => {
             <span className="text-xs font-bold text-slate-400 uppercase">Active Committees</span>
             <span className="text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-purple-300 font-mono mt-2">18</p>
-          <p className="text-[11px] text-purple-400 mt-1">Central & District tiers</p>
+          <p className="text-3xl font-bold text-purple-300 font-mono mt-2">
+            {stats.loading ? '...' : stats.committeeCount}
+          </p>
+          <p className="text-[11px] text-purple-400 mt-1">Structured tiers</p>
         </Card>
 
         <Card className="!p-5 border-l-4 border-amber-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase">Upcoming Events</span>
-            <span className="text-lg">🎟️</span>
+            <span className="text-xs font-bold text-slate-400 uppercase">System Status</span>
+            <span className="text-lg">⚡</span>
           </div>
-          <p className="text-3xl font-bold text-amber-400 font-mono mt-2">4</p>
-          <p className="text-[11px] text-slate-400 mt-1">QR Tickets active</p>
+          <p className="text-3xl font-bold text-emerald-400 font-mono mt-2">LIVE</p>
+          <p className="text-[11px] text-slate-400 mt-1">Database synced</p>
         </Card>
       </div>
 
@@ -146,7 +194,7 @@ export const DashboardOverviewPage = () => {
         <Card className="space-y-3">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-100 text-sm">🪪 Member Directory & PVC Studio</h3>
-            <span className="text-xs text-indigo-400 font-mono">1,248 Members</span>
+            <span className="text-xs text-indigo-400 font-mono">{stats.memberCount} Members</span>
           </div>
           <p className="text-xs text-slate-400">Search members, update details, or print PVC Smart ID cards with QR validation.</p>
           <div className="flex gap-4 pt-2">
@@ -162,7 +210,7 @@ export const DashboardOverviewPage = () => {
         <Card className="space-y-3">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-100 text-sm">👥 Committee Hierarchy Tiers</h3>
-            <span className="text-xs text-indigo-400 font-mono">18 Active Tiers</span>
+            <span className="text-xs text-indigo-400 font-mono">{stats.committeeCount} Active Tiers</span>
           </div>
           <p className="text-xs text-slate-400">Structure Central, District, and Upazila committee leadership terms.</p>
           <Link to="/committees" className="text-xs text-indigo-400 hover:underline font-bold block pt-2">
