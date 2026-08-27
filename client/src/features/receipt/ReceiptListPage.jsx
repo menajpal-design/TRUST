@@ -40,9 +40,13 @@ export const ReceiptListPage = () => {
   const displayReceipts = canManageReceipts
     ? receipts
     : receipts.filter(r => {
+        const userEmail = (user?.email || '').trim().toLowerCase();
+        const payerEmail = (r.payer_email || '').trim().toLowerCase();
+        if (userEmail && payerEmail && userEmail === payerEmail) return true;
+
         const userName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim().toLowerCase();
-        const pName = (r.payer_name || '').toLowerCase();
-        return pName.includes(userName) || userName.includes(pName);
+        const pName = (r.payer_name || '').trim().toLowerCase();
+        return (userName && pName && (pName.includes(userName) || userName.includes(pName)));
       });
 
   const totalReceiptsAmount = displayReceipts.reduce((acc, curr) => acc + (curr.amount || 0), 0);

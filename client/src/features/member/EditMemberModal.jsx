@@ -137,9 +137,9 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
           {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Personal Details */}
+            {/* Personal & Membership Details */}
             <div className="space-y-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800">
-              <h3 className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wider">Personal Details</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wider">Personal & Membership Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label>First Name</Label>
@@ -148,6 +148,52 @@ export const EditMemberModal = ({ isOpen, onClose, member, onSuccess }) => {
                 <div>
                   <Label>Last Name</Label>
                   <Input type="text" name="last_name" value={formData.last_name} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input type="text" name="phone" placeholder="+880 1700-000000" value={formData.phone} onChange={handleChange} />
+                </div>
+                <div>
+                  <Label>Address / Location</Label>
+                  <Input type="text" name="address" placeholder="e.g. Dhaka, Bangladesh" value={formData.address} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label>Membership Type</Label>
+                  <select
+                    name="membership_type"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"
+                    value={formData.membership_type}
+                    onChange={handleChange}
+                  >
+                    <option value="GENERAL">GENERAL</option>
+                    <option value="LIFETIME">LIFETIME</option>
+                    <option value="HONORARY">HONORARY</option>
+                    <option value="EXECUTIVE">EXECUTIVE</option>
+                    <option value="DONOR">DONOR</option>
+                    <option value="STUDENT">STUDENT</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label>Member Status</Label>
+                  <select
+                    name="status"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"
+                    value={formData.status}
+                    onChange={handleChange}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
+                    <option value="EXPELLED">EXPELLED</option>
+                  </select>
                 </div>
               </div>
             </div>
