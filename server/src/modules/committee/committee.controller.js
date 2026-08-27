@@ -5,7 +5,8 @@ class CommitteeController {
   static async create(req, res) {
     const result = await CommitteeService.createCommittee(
       req.user.active_organization_id,
-      req.body
+      req.body,
+      req.user
     );
     return ApiResponse.success(res, 'Committee created successfully', result, 201);
   }

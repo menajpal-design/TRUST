@@ -21,17 +21,33 @@ const committeeSchema = new mongoose.Schema(
     },
     committee_level: {
       type: String,
-      enum: ['CENTRAL', 'DIVISION', 'DISTRICT', 'UPAZILA', 'UNION', 'WARD', 'VILLAGE', 'SPECIALIZED'],
+      enum: [
+        'CENTRAL',
+        'NATIONAL',
+        'DIVISION',
+        'DISTRICT',
+        'CITY_CORPORATION',
+        'UPAZILA',
+        'UNION',
+        'CITY_CORPORATION_WARD',
+        'WARD',
+        'VILLAGE',
+        'SPECIALIZED',
+        'SUB'
+      ],
       default: 'CENTRAL'
     },
     committee_type: {
       type: String,
       enum: [
         'NATIONAL',
+        'CENTRAL',
         'DIVISION',
         'DISTRICT',
+        'CITY_CORPORATION',
         'UPAZILA',
         'UNION',
+        'CITY_CORPORATION_WARD',
         'WARD',
         'VILLAGE',
         'SCHOOL',

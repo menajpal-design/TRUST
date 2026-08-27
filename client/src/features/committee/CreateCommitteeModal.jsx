@@ -7,7 +7,7 @@ import { Alert } from '../../components/ui/Alert';
 import { createCommittee, fetchCommittees } from '../../services/committee.service';
 import { UnionDeskGeoSelector } from '../../components/UnionDeskGeoSelector';
 
-export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
+export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess, initialParentId = '' }) => {
   if (!isOpen) return null;
 
   const [parentCommittees, setParentCommittees] = useState([]);
@@ -16,7 +16,7 @@ export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
     code: '',
     committee_level: 'CENTRAL',
     committee_type: 'EXECUTIVE',
-    parent_committee_id: '',
+    parent_committee_id: initialParentId || '',
     duration_years: 2,
     term_start_date: new Date().toISOString().split('T')[0],
     term_end_date: '',
@@ -40,13 +40,142 @@ export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
 
   useEffect(() => {
     fetchCommittees()
-      .then((res) => setParentCommittees(res.data))
+      .then((res) => {
+        const list = res.data || [];
+        setParentCommittees(list);
+        if (initialParentId) {
+          const parent = list.find(p => p._id === initialParentId);
+          if (parent) {
+            const pLevel = parent.committee_level || parent.committee_type || 'CENTRAL';
+            const defaultChild = getRecommendedChildLevel(pLevel);
+            setFormData(prev => ({
+              ...prev,
+              parent_committee_id: initialParentId,
+              committee_level: defaultChild,
+              committee_type: defaultChild
+            }));
+          }
+        }
+      })
       .catch(console.error);
-  }, []);
+  }, [initialParentId]);
+
+  const getRecommendedChildLevel = (parentLevel) => {
+    switch (parentLevel) {
+      case 'CENTRAL':
+      case 'NATIONAL':
+      case 'EXECUTIVE':
+        return 'DIVISION';
+      case 'DIVISION':
+        return 'DISTRICT';
+      case 'DISTRICT':
+        return 'UPAZILA';
+      case 'CITY_CORPORATION':
+        return 'CITY_CORPORATION_WARD';
+      case 'UPAZILA':
+        return 'UNION';
+      case 'UNION':
+        return 'WARD';
+      default:
+        return 'SUB';
+    }
+  };
+
+  const getAvailableLevelsForParent = (parentId) => {
+    if (!parentId) {
+      return [
+        { value: 'CENTRAL', label: '🇧🇩 কেন্দ্রীয় কমিটি (Central / National)' },
+        { value: 'DIVISION', label: '🏢 বিভাগীয় কমিটি (Division)' },
+        { value: 'DISTRICT', label: '📍 জেলা কমিটি (District)' },
+        { value: 'CITY_CORPORATION', label: '🏙️ সিটি কর্পোরেশন কমিটি (City Corporation)' },
+        { value: 'UPAZILA', label: '🏛️ উপজেলা কমিটি (Upazila)' },
+        { value: 'UNION', label: '🚩 ইউনিয়ন পরিষদ কমিটি (Union Parishad)' },
+        { value: 'CITY_CORPORATION_WARD', label: '🔢 সিটি কর্পোরেশন ওয়ার্ড (City Corp Ward)' },
+        { value: 'WARD', label: '🏡 ইউনিয়ন ওয়ার্ড / গ্রাম (Union Ward / Village)' },
+        { value: 'SPECIALIZED', label: '⚡ বিশেষ / উপকমিটি (Specialized / Sub)' }
+      ];
+    }
+
+    const parent = parentCommittees.find(p => p._id === parentId);
+    const pLevel = parent?.committee_level || parent?.committee_type || 'CENTRAL';
+
+    const childMap = {
+      CENTRAL: [
+        { value: 'DIVISION', label: '🏢 বিভাগীয় কমিটি (Division)' },
+        { value: 'DISTRICT', label: '📍 জেলা কমিটি (District)' },
+        { value: 'CITY_CORPORATION', label: '🏙️ সিটি কর্পোরেশন কমিটি (City Corporation)' },
+        { value: 'UPAZILA', label: '🏛️ উপজেলা কমিটি (Upazila)' },
+        { value: 'UNION', label: '🚩 ইউনিয়ন পরিষদ কমিটি (Union)' },
+        { value: 'CITY_CORPORATION_WARD', label: '🔢 সিটি কর্পোরেশন ওয়ার্ড (City Corp Ward)' },
+        { value: 'WARD', label: '🏡 ইউনিয়ন ওয়ার্ড (Ward)' },
+        { value: 'SPECIALIZED', label: '⚡ বিশেষ উপকমিটি (Specialized / Sub)' }
+      ],
+      NATIONAL: [
+        { value: 'DIVISION', label: '🏢 বিভাগীয় কমিটি (Division)' },
+        { value: 'DISTRICT', label: '📍 জেলা কমিটি (District)' },
+        { value: 'CITY_CORPORATION', label: '🏙️ সিটি কর্পোরেশন কমিটি (City Corporation)' },
+        { value: 'UPAZILA', label: '🏛️ উপজেলা কমিটি (Upazila)' },
+        { value: 'UNION', label: '🚩 ইউনিয়ন পরিষদ কমিটি (Union)' },
+        { value: 'SPECIALIZED', label: '⚡ বিশেষ উপকমিটি (Specialized / Sub)' }
+      ],
+      DIVISION: [
+        { value: 'DISTRICT', label: '📍 জেলা কমিটি (District Committee)' },
+        { value: 'CITY_CORPORATION', label: '🏙️ সিটি কর্পোরেশন কমিটি (City Corporation)' },
+        { value: 'UPAZILA', label: '🏛️ উপজেলা কমিটি (Upazila Committee)' },
+        { value: 'UNION', label: '🚩 ইউনিয়ন কমিটি (Union Committee)' },
+        { value: 'SPECIALIZED', label: '⚡ বিভাগীয় উপকমিটি (Division Sub-Committee)' }
+      ],
+      DISTRICT: [
+        { value: 'UPAZILA', label: '🏛️ উপজেলা কমিটি (Upazila Committee)' },
+        { value: 'CITY_CORPORATION', label: '🏙️ সিটি কর্পোরেশন কমিটি (City Corporation)' },
+        { value: 'UNION', label: '🚩 ইউনিয়ন কমিটি (Union Committee)' },
+        { value: 'SPECIALIZED', label: '⚡ জেলা উপকমিটি (District Sub-Committee)' }
+      ],
+      CITY_CORPORATION: [
+        { value: 'CITY_CORPORATION_WARD', label: '🔢 সিটি কর্পোরেশন ওয়ার্ড কমিটি (City Corp Ward)' },
+        { value: 'WARD', label: '🔢 ওয়ার্ড কমিটি (Ward Committee)' },
+        { value: 'SPECIALIZED', label: '⚡ কর্পোরেশন উপকমিটি (Sub-Committee)' }
+      ],
+      UPAZILA: [
+        { value: 'UNION', label: '🚩 ইউনিয়ন পরিষদ কমিটি (Union Parishad Committee)' },
+        { value: 'WARD', label: '🔢 পৌরসভা / উপজেলা ওয়ার্ড (Municipality Ward)' },
+        { value: 'SPECIALIZED', label: '⚡ উপজেলা উপকমিটি (Upazila Sub-Committee)' }
+      ],
+      UNION: [
+        { value: 'WARD', label: '🏡 ইউনিয়ন ওয়ার্ড কমিটি (Union Ward Committee)' },
+        { value: 'VILLAGE', label: '🏡 গ্রাম কমিটি (Village Committee)' },
+        { value: 'SPECIALIZED', label: '⚡ ইউনিয়ন উপকমিটি (Union Sub-Committee)' }
+      ],
+      CITY_CORPORATION_WARD: [
+        { value: 'SPECIALIZED', label: '⚡ ওয়ার্ড উপকমিটি (Ward Sub-Committee)' }
+      ],
+      WARD: [
+        { value: 'VILLAGE', label: '🏡 গ্রাম কমিটি (Village Committee)' },
+        { value: 'SPECIALIZED', label: '⚡ ওয়ার্ড উপকমিটি (Ward Sub-Committee)' }
+      ]
+    };
+
+    return childMap[pLevel] || [{ value: 'SPECIALIZED', label: '⚡ উপকমিটি (Sub-Committee)' }];
+  };
+
+  const handleParentChange = (e) => {
+    const parentId = e.target.value;
+    const available = getAvailableLevelsForParent(parentId);
+    setFormData(prev => ({
+      ...prev,
+      parent_committee_id: parentId,
+      committee_level: available[0]?.value || 'CENTRAL',
+      committee_type: available[0]?.value || 'EXECUTIVE'
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    if (name === 'committee_level') {
+      setFormData({ ...formData, committee_level: value, committee_type: value });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -71,14 +200,16 @@ export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  const availableLevels = getAvailableLevelsForParent(formData.parent_committee_id);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
       <div className="w-full max-w-2xl my-8">
         <Card className="max-h-[90vh] overflow-y-auto pr-2">
           <div className="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/90 py-2 backdrop-blur-sm z-10 border-b border-slate-800">
             <div>
-              <h2 className="text-xl font-bold text-slate-100">Create UnionDesk 🇧🇩 Committee</h2>
-              <p className="text-xs text-slate-400">Configure hierarchy, Bangladesh geo-locations, duration & term dates</p>
+              <h2 className="text-xl font-bold text-slate-100">🌿 নতুন সাংগঠনিক কমিটি গঠন করুন</h2>
+              <p className="text-xs text-slate-400">জাতীয়, বিভাগ, জেলা, উপজেলা, ইউনিয়ন, ওয়ার্ড ও সিটি কর্পোরেশন স্তরভিত্তিক কমিটি</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-200 text-lg font-bold">
               ✕
@@ -90,93 +221,87 @@ export const CreateCommitteeModal = ({ isOpen, onClose, onSuccess }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Section 1: Basic Information */}
             <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Committee Identity</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">কমিটি পরিচয় ও স্তর নির্ধারণ</h3>
+              
+              <div>
+                <Label>অভিভাবক / মূল কমিটি (Parent Hierarchy)</Label>
+                <select
+                  name="parent_committee_id"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-indigo-500/50 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm"
+                  value={formData.parent_committee_id}
+                  onChange={handleParentChange}
+                >
+                  <option value="">🚫 কোনোটি নয় (শীর্ষ জাতীয় / কেন্দ্রীয় কমিটি)</option>
+                  {parentCommittees.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      🏛️ {c.name} [{c.committee_level || c.committee_type}]
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-indigo-300 mt-1 block">
+                  💡 প্যারেন্ট কমিটি সিলেক্ট করলে স্বয়ংক্রিয়ভাবে তার অধীনস্থ অনুমোদিত স্তরগুলো ফিল্টার হবে।
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Committee Name</Label>
+                  <Label>কমিটির স্তর (Committee Hierarchy Tier)</Label>
+                  <select
+                    name="committee_level"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm"
+                    value={formData.committee_level}
+                    onChange={handleChange}
+                  >
+                    {availableLevels.map((lvl) => (
+                      <option key={lvl.value} value={lvl.value}>
+                        {lvl.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label>কমিটির ধরন (Category / Type)</Label>
+                  <select
+                    name="committee_type"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    value={formData.committee_type}
+                    onChange={handleChange}
+                  >
+                    <option value={formData.committee_level}>মূল নির্বাহী পর্ষদ ({formData.committee_level})</option>
+                    <option value="WOMEN">👩 মহিলা উইং / কমিটি</option>
+                    <option value="YOUTH">⚡ যুব উইং / তরুণ পরিষদ</option>
+                    <option value="MARKET">🏬 ব্যবসায়ী সমিতি / মার্কেট কমিটি</option>
+                    <option value="MOSQUE">🕌 মসজিদ পরিচালনা কমিটি</option>
+                    <option value="SCHOOL">🏫 স্কুল পরিচালনা কমিটি</option>
+                    <option value="COLLEGE">🎓 কলেজ পরিচালনা কমিটি</option>
+                    <option value="SUB">📑 বিশেষ উপকমিটি (Sub-Committee)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>কমিটির নাম (Committee Name)</Label>
                   <Input
                     type="text"
                     name="name"
-                    placeholder="e.g. Faridpur District Committee"
+                    placeholder="যেমন: ফরিদপুর জেলা কার্যকরী পরিষদ"
                     value={formData.name}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div>
-                  <Label>Committee Code</Label>
+                  <Label>কমিটি কোড (Code)</Label>
                   <Input
                     type="text"
                     name="code"
-                    placeholder="e.g. FAR-DIST"
+                    placeholder="যেমন: FAR-DIST-2026"
                     value={formData.code}
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Committee Level</Label>
-                  <select
-                    name="committee_level"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={formData.committee_level}
-                    onChange={handleChange}
-                  >
-                    <option value="CENTRAL">Central Level</option>
-                    <option value="DIVISION">Division Level</option>
-                    <option value="DISTRICT">District Level</option>
-                    <option value="UPAZILA">Upazila Level</option>
-                    <option value="UNION">Union Level</option>
-                    <option value="WARD">Ward Level</option>
-                    <option value="VILLAGE">Village Level</option>
-                    <option value="SPECIALIZED">Specialized Tier</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label>Committee Type</Label>
-                  <select
-                    name="committee_type"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={formData.committee_type}
-                    onChange={handleChange}
-                  >
-                    <option value="NATIONAL">🇧🇩 National Committee</option>
-                    <option value="DIVISION">🏢 Division Committee</option>
-                    <option value="DISTRICT">📍 District Committee</option>
-                    <option value="UPAZILA">🏛️ Upazila Committee</option>
-                    <option value="UNION">🚩 Union Committee</option>
-                    <option value="WARD">🔢 Ward Committee</option>
-                    <option value="VILLAGE">🏡 Village Committee</option>
-                    <option value="SCHOOL">🏫 School Committee</option>
-                    <option value="COLLEGE">🎓 College Committee</option>
-                    <option value="MOSQUE">🕌 Mosque Committee</option>
-                    <option value="MARKET">🏬 Market Committee</option>
-                    <option value="WOMEN">👩 Women's Committee</option>
-                    <option value="YOUTH">⚡ Youth Committee</option>
-                    <option value="EXECUTIVE">Executive Board</option>
-                    <option value="SUB">Sub-Committee</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <Label>Parent Committee (Hierarchy)</Label>
-                <select
-                  name="parent_committee_id"
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={formData.parent_committee_id}
-                  onChange={handleChange}
-                >
-                  <option value="">None (Top-Level Parent)</option>
-                  {parentCommittees.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name} ({c.code || 'BD-CMT'})
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
 

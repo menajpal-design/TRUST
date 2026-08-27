@@ -5,7 +5,11 @@ const createCommitteeSchema = z.object({
     name: z.string().min(2, 'Committee name must be at least 2 characters'),
     code: z.string().optional(),
     description: z.string().optional(),
+    committee_level: z.string().optional(),
+    committee_type: z.string().optional(),
     parent_committee_id: z.string().optional().nullable(),
+    duration_years: z.number().optional(),
+    geo_location: z.any().optional(),
     term_start_date: z.string().optional(),
     term_end_date: z.string().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'DISSOLVED', 'ARCHIVED']).optional()
@@ -17,7 +21,11 @@ const updateCommitteeSchema = z.object({
     name: z.string().min(2).optional(),
     code: z.string().optional(),
     description: z.string().optional(),
+    committee_level: z.string().optional(),
+    committee_type: z.string().optional(),
     parent_committee_id: z.string().optional().nullable(),
+    duration_years: z.number().optional(),
+    geo_location: z.any().optional(),
     term_start_date: z.string().optional(),
     term_end_date: z.string().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'DISSOLVED', 'ARCHIVED']).optional()

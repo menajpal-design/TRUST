@@ -4,9 +4,113 @@ const CommitteeHistory = require('./committeeHistory.model');
 const User = require('../auth/user.model');
 
 class CommitteeService {
-  static async createCommittee(organizationId, data) {
+  static getHierarchyRank(levelOrType) {
+    const key = String(levelOrType || '').toUpperCase();
+    const rankMap = {
+      NATIONAL: 1,
+      CENTRAL: 1,
+      EXECUTIVE: 1,
+      DIVISION: 2,
+      DISTRICT: 3,
+      CITY_CORPORATION: 4,
+      UPAZILA: 4,
+      UNION: 5,
+      CITY_CORPORATION_WARD: 6,
+      WARD: 6,
+      VILLAGE: 7,
+      SPECIALIZED: 8,
+      SUB: 8
+    };
+    return rankMap[key] || 8;
+  }
+
+  static getAllowedChildLevels(parentLevelOrType) {
+    const key = String(parentLevelOrType || 'CENTRAL').toUpperCase();
+    const childMatrix = {
+      NATIONAL: ['DIVISION', 'DISTRICT', 'CITY_CORPORATION', 'UPAZILA', 'UNION', 'CITY_CORPORATION_WARD', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      CENTRAL: ['DIVISION', 'DISTRICT', 'CITY_CORPORATION', 'UPAZILA', 'UNION', 'CITY_CORPORATION_WARD', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      EXECUTIVE: ['DIVISION', 'DISTRICT', 'CITY_CORPORATION', 'UPAZILA', 'UNION', 'CITY_CORPORATION_WARD', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      DIVISION: ['DISTRICT', 'CITY_CORPORATION', 'UPAZILA', 'UNION', 'CITY_CORPORATION_WARD', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      DISTRICT: ['UPAZILA', 'CITY_CORPORATION', 'UNION', 'CITY_CORPORATION_WARD', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      CITY_CORPORATION: ['CITY_CORPORATION_WARD', 'WARD', 'SPECIALIZED', 'SUB'],
+      UPAZILA: ['UNION', 'WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      UNION: ['WARD', 'VILLAGE', 'SPECIALIZED', 'SUB'],
+      CITY_CORPORATION_WARD: ['SUB', 'SPECIALIZED'],
+      WARD: ['VILLAGE', 'SUB', 'SPECIALIZED'],
+      VILLAGE: ['SUB', 'SPECIALIZED']
+    };
+    return childMatrix[key] || ['SUB', 'SPECIALIZED'];
+  }
+
+  static async createCommittee(organizationId, data, requestingUser = null) {
+    const committeeLevel = String(data.committee_level || 'CENTRAL').toUpperCase();
+    const committeeType = String(data.committee_type || data.committee_level || 'EXECUTIVE').toUpperCase();
+
+    // If parent committee is specified, validate hierarchy integrity
+    if (data.parent_committee_id) {
+      const parent = await Committee.findOne({
+        _id: data.parent_committee_id,
+        organization_id: organizationId,
+        is_deleted: false
+      });
+
+      if (!parent) {
+        const error = new Error('Parent committee does not exist in this organization');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const parentLevel = parent.committee_level || parent.committee_type || 'CENTRAL';
+      const allowedChildren = CommitteeService.getAllowedChildLevels(parentLevel);
+
+      if (!allowedChildren.includes(committeeLevel) && !allowedChildren.includes(committeeType)) {
+        const error = new Error(`Invalid Hierarchy: ${parentLevel} committee cannot directly establish a ${committeeLevel} committee. Allowed child tiers: ${allowedChildren.join(', ')}`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    // Role & Superiority Guard for committee creation
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        // Find requesting user's highest active committee
+        const userCommittees = await CommitteeMember.find({ user_id: requestingUser._id, status: 'ACTIVE' }).populate('committee_id');
+        if (userCommittees.length === 0) {
+          const error = new Error('Access Denied: Only organization leaders or superior committee executives can create committees.');
+          error.statusCode = 403;
+          throw error;
+        }
+
+        let userBestRank = 99;
+        let userBestLevel = 'MEMBER';
+        userCommittees.forEach(cm => {
+          if (cm.committee_id) {
+            const rank = CommitteeService.getHierarchyRank(cm.committee_id.committee_level || cm.committee_id.committee_type);
+            if (rank < userBestRank) {
+              userBestRank = rank;
+              userBestLevel = cm.committee_id.committee_level || cm.committee_id.committee_type;
+            }
+          }
+        });
+
+        const targetRank = CommitteeService.getHierarchyRank(committeeLevel);
+        const allowedForUser = CommitteeService.getAllowedChildLevels(userBestLevel);
+
+        if (userBestRank >= targetRank || (!allowedForUser.includes(committeeLevel) && !allowedForUser.includes(committeeType))) {
+          const error = new Error(`Access Denied: Your committee tier (${userBestLevel}) cannot create a ${committeeLevel} committee. You can only create: ${allowedForUser.join(', ')}`);
+          error.statusCode = 403;
+          throw error;
+        }
+      }
+    }
+
     const committee = await Committee.create({
       ...data,
+      committee_level: committeeLevel,
+      committee_type: committeeType,
       organization_id: organizationId
     });
     return committee;
@@ -21,7 +125,7 @@ class CommitteeService {
     if (status) query.status = status;
 
     const committees = await Committee.find(query)
-      .populate('parent_committee_id', 'name code')
+      .populate('parent_committee_id', 'name code committee_level committee_type')
       .sort({ name: 1 });
 
     const committeeIds = committees.map(c => c._id);
@@ -35,10 +139,26 @@ class CommitteeService {
       countMap[m._id.toString()] = m.count;
     });
 
-    return committees.map(c => ({
-      ...c.toObject(),
-      member_count: countMap[c._id.toString()] || 0
-    }));
+    // Count direct subordinate child committees
+    const childCountMap = {};
+    committees.forEach(c => {
+      if (c.parent_committee_id?._id) {
+        const pId = c.parent_committee_id._id.toString();
+        childCountMap[pId] = (childCountMap[pId] || 0) + 1;
+      }
+    });
+
+    return committees.map(c => {
+      const cObj = c.toObject();
+      const rank = CommitteeService.getHierarchyRank(c.committee_level || c.committee_type);
+      return {
+        ...cObj,
+        hierarchy_rank: rank,
+        member_count: countMap[c._id.toString()] || 0,
+        subordinate_count: childCountMap[c._id.toString()] || 0,
+        allowed_child_levels: CommitteeService.getAllowedChildLevels(c.committee_level || c.committee_type)
+      };
+    });
   }
 
   static async getCommitteeById(organizationId, committeeId) {
