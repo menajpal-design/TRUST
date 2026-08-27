@@ -19,7 +19,8 @@ class CommitteeController {
   static async list(req, res) {
     const result = await CommitteeService.getCommitteesByOrg(
       req.user.active_organization_id,
-      req.query.status
+      req.query.status,
+      req.user
     );
     return ApiResponse.success(res, 'Committees retrieved', result, 200);
   }
@@ -27,7 +28,8 @@ class CommitteeController {
   static async getById(req, res) {
     const result = await CommitteeService.getCommitteeById(
       req.user.active_organization_id,
-      req.params.id
+      req.params.id,
+      req.user
     );
     return ApiResponse.success(res, 'Committee details retrieved', result, 200);
   }
@@ -36,7 +38,8 @@ class CommitteeController {
     const result = await CommitteeService.updateCommittee(
       req.user.active_organization_id,
       req.params.id,
-      req.body
+      req.body,
+      req.user
     );
     return ApiResponse.success(res, 'Committee updated successfully', result, 200);
   }
@@ -44,7 +47,8 @@ class CommitteeController {
   static async delete(req, res) {
     const result = await CommitteeService.deleteCommittee(
       req.user.active_organization_id,
-      req.params.id
+      req.params.id,
+      req.user
     );
     return ApiResponse.success(res, result.message, null, 200);
   }

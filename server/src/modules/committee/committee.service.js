@@ -120,15 +120,59 @@ class CommitteeService {
     return { seeded: 0, message: 'Committees must be setup manually by organization admin.' };
   }
 
-  static async getCommitteesByOrg(organizationId, status) {
+  static getAllSubordinateCommitteeIds(allCommittees, rootIds) {
+    const allowed = new Set(rootIds.map(id => id.toString()));
+    let addedNew = true;
+
+    while (addedNew) {
+      addedNew = false;
+      allCommittees.forEach(c => {
+        const cId = c._id.toString();
+        const pId = c.parent_committee_id?._id ? c.parent_committee_id._id.toString() : c.parent_committee_id?.toString();
+        if (pId && allowed.has(pId) && !allowed.has(cId)) {
+          allowed.add(cId);
+          addedNew = true;
+        }
+      });
+    }
+
+    return allowed;
+  }
+
+  static async getCommitteesByOrg(organizationId, status, requestingUser = null) {
     const query = { organization_id: organizationId, is_deleted: false };
     if (status) query.status = status;
 
-    const committees = await Committee.find(query)
+    const allCommittees = await Committee.find(query)
       .populate('parent_committee_id', 'name code committee_level committee_type')
       .sort({ name: 1 });
 
-    const committeeIds = committees.map(c => c._id);
+    let visibleCommittees = allCommittees;
+
+    // Strict Top-Down Visibility: Lower tier CANNOT see upper management, but Upper tier sees all subordinate management
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        const userMemberships = await CommitteeMember.find({
+          user_id: requestingUser._id,
+          status: 'ACTIVE'
+        });
+
+        if (!userMemberships || userMemberships.length === 0) {
+          return [];
+        }
+
+        const userRootIds = userMemberships.map(m => m.committee_id.toString());
+        const allowedIds = CommitteeService.getAllSubordinateCommitteeIds(allCommittees, userRootIds);
+
+        // Filter: only user's own committees and their subordinate branches are returned
+        visibleCommittees = allCommittees.filter(c => allowedIds.has(c._id.toString()));
+      }
+    }
+
+    const committeeIds = visibleCommittees.map(c => c._id);
     const memberCounts = await CommitteeMember.aggregate([
       { $match: { committee_id: { $in: committeeIds }, status: 'ACTIVE' } },
       { $group: { _id: '$committee_id', count: { $sum: 1 } } }
@@ -141,14 +185,14 @@ class CommitteeService {
 
     // Count direct subordinate child committees
     const childCountMap = {};
-    committees.forEach(c => {
+    visibleCommittees.forEach(c => {
       if (c.parent_committee_id?._id) {
         const pId = c.parent_committee_id._id.toString();
         childCountMap[pId] = (childCountMap[pId] || 0) + 1;
       }
     });
 
-    return committees.map(c => {
+    return visibleCommittees.map(c => {
       const cObj = c.toObject();
       const rank = CommitteeService.getHierarchyRank(c.committee_level || c.committee_type);
       return {
@@ -161,12 +205,12 @@ class CommitteeService {
     });
   }
 
-  static async getCommitteeById(organizationId, committeeId) {
+  static async getCommitteeById(organizationId, committeeId, requestingUser = null) {
     const committee = await Committee.findOne({
       _id: committeeId,
       organization_id: organizationId,
       is_deleted: false
-    }).populate('parent_committee_id', 'name code');
+    }).populate('parent_committee_id', 'name code committee_level committee_type');
 
     if (!committee) {
       const error = new Error('Committee not found');
@@ -174,20 +218,48 @@ class CommitteeService {
       throw error;
     }
 
+    // Strict Top-Down Visibility Check: Lower tier cannot inspect superior committee management
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        const allOrgCommittees = await Committee.find({ organization_id: organizationId, is_deleted: false });
+        const userMemberships = await CommitteeMember.find({
+          user_id: requestingUser._id,
+          status: 'ACTIVE'
+        });
+
+        const userRootIds = userMemberships.map(m => m.committee_id.toString());
+        const allowedIds = CommitteeService.getAllSubordinateCommitteeIds(allOrgCommittees, userRootIds);
+
+        if (!allowedIds.has(committeeId.toString())) {
+          const error = new Error('Access Denied: Upper tier management cannot be viewed or accessed by lower committee members.');
+          error.statusCode = 403;
+          throw error;
+        }
+      }
+    }
+
     const members = await CommitteeMember.find({
       committee_id: committeeId,
       status: 'ACTIVE'
     })
-      .populate('user_id', 'first_name last_name email avatar_url')
+      .populate('user_id', 'first_name last_name email avatar_url phone')
       .sort({ position_order: 1 });
+
+    const history = await CommitteeHistory.find({
+      committee_id: committeeId
+    }).sort({ created_at: -1 });
 
     return {
       committee,
-      members
+      members,
+      history
     };
   }
 
-  static async updateCommittee(organizationId, committeeId, data) {
+  static async updateCommittee(organizationId, committeeId, data, requestingUser = null) {
     const committee = await Committee.findOne({
       _id: committeeId,
       organization_id: organizationId,
@@ -198,6 +270,29 @@ class CommitteeService {
       const error = new Error('Committee not found');
       error.statusCode = 404;
       throw error;
+    }
+
+    // Top-Down Authorization Check
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        const allOrgCommittees = await Committee.find({ organization_id: organizationId, is_deleted: false });
+        const userMemberships = await CommitteeMember.find({
+          user_id: requestingUser._id,
+          status: 'ACTIVE'
+        });
+
+        const userRootIds = userMemberships.map(m => m.committee_id.toString());
+        const allowedIds = CommitteeService.getAllSubordinateCommitteeIds(allOrgCommittees, userRootIds);
+
+        if (!allowedIds.has(committeeId.toString())) {
+          const error = new Error('Access Denied: Lower tier leaders cannot modify superior committees.');
+          error.statusCode = 403;
+          throw error;
+        }
+      }
     }
 
     Object.assign(committee, data);
@@ -205,7 +300,7 @@ class CommitteeService {
     return committee;
   }
 
-  static async deleteCommittee(organizationId, committeeId) {
+  static async deleteCommittee(organizationId, committeeId, requestingUser = null) {
     const committee = await Committee.findOne({
       _id: committeeId,
       organization_id: organizationId,
@@ -216,6 +311,29 @@ class CommitteeService {
       const error = new Error('Committee not found');
       error.statusCode = 404;
       throw error;
+    }
+
+    // Top-Down Authorization Check
+    if (requestingUser && !requestingUser.is_global_superadmin) {
+      const userRole = String(requestingUser.role || 'MEMBER').toUpperCase();
+      const isTopOrgLeader = ['ORG_OWNER', 'OWNER', 'ADMIN'].includes(userRole);
+
+      if (!isTopOrgLeader) {
+        const allOrgCommittees = await Committee.find({ organization_id: organizationId, is_deleted: false });
+        const userMemberships = await CommitteeMember.find({
+          user_id: requestingUser._id,
+          status: 'ACTIVE'
+        });
+
+        const userRootIds = userMemberships.map(m => m.committee_id.toString());
+        const allowedIds = CommitteeService.getAllSubordinateCommitteeIds(allOrgCommittees, userRootIds);
+
+        if (!allowedIds.has(committeeId.toString())) {
+          const error = new Error('Access Denied: Lower tier leaders cannot delete superior committees.');
+          error.statusCode = 403;
+          throw error;
+        }
+      }
     }
 
     committee.is_deleted = true;
